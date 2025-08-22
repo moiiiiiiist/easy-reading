@@ -16,8 +16,8 @@ class SentenceSplitter {
         // 句子结束标点符号（中英文）
         this.sentenceEnders = /[.!?。！？]/;
         
-        // 数字序号模式
-        this.numberedPattern = /^\d+\.\s/;
+        // 数字序号模式（支持有空格和无空格的情况）
+        this.numberedPattern = /^\d+\./;
     }
 
     /**
@@ -226,8 +226,8 @@ class SentenceSplitter {
             return false;
         }
 
-        // 过滤只包含数字和符号的句子
-        if (/^[\d\s\-.,()]+$/.test(sentence)) {
+        // 过滤只包含数字和符号的句子（但保留序号格式如 "1." "2." 等）
+        if (/^[\d\s\-.,()]+$/.test(sentence) && !/^\d+\.$/.test(sentence.trim())) {
             return false;
         }
 
