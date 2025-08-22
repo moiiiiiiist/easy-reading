@@ -21,6 +21,60 @@ class SentenceSplitter {
     }
 
     /**
+     * 按行分割文本（每行一个句子）
+     * @param {string} text - 要分割的文本
+     * @returns {Array} 句子数组
+     */
+    splitByLines(text) {
+        if (!text || typeof text !== 'string') {
+            return [];
+        }
+
+        // 按换行符分割，过滤空行
+        const lines = text.split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0);
+
+        return lines;
+    }
+
+    /**
+     * 检测文本格式类型
+     * @param {string} text - 要检测的文本
+     * @returns {string} 格式类型：'line-by-line' 或 'continuous'
+     */
+    detectTextFormat(text) {
+        if (!text || typeof text !== 'string') {
+            return 'continuous';
+        }
+
+        const lines = text.split('\n').filter(line => line.trim().length > 0);
+        
+        if (lines.length === 0) {
+            return 'continuous';
+        }
+
+        // 检查是否每行都是一个完整的句子
+        let lineSentenceCount = 0;
+        let totalSentences = 0;
+
+        for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (trimmedLine.length === 0) continue;
+
+            // 检查这一行是否以句子结束符结尾
+            if (this.sentenceEnders.test(trimmedLine[trimmedLine.length - 1])) {
+                lineSentenceCount++;
+            }
+            totalSentences++;
+        }
+
+        // 如果大部分行都是完整句子，则认为是行分割格式
+        const ratio = lineSentenceCount / totalSentences;
+        return ratio > 0.7 ? 'line-by-line' : 'continuous';
+    }
+
+    /**
      * 分割文本为句子数组
      * @param {string} text - 要分割的文本
      * @returns {Array} 句子数组
@@ -86,6 +140,19 @@ class SentenceSplitter {
             return { sentences: [], paragraphBreaks: [] };
         }
 
+        // 检测文本格式
+        const format = this.detectTextFormat(text);
+        
+        if (format === 'line-by-line') {
+            // 使用行分割模式
+            const sentences = this.splitByLines(text);
+            return {
+                sentences: sentences,
+                paragraphBreaks: [] // 行分割模式下没有段落分隔
+            };
+        }
+
+        // 使用连续文本分割模式
         // 预处理：保留段落结构
         // 将连续的换行符标准化为双换行符
         text = text.replace(/\n\s*\n/g, '\n\n');
