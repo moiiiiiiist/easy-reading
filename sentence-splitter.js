@@ -1,5 +1,6 @@
 /**
  * 句子分割器 - 智能处理中英文文本分割
+ * 版本: 2.0 - 支持无空格句子分割
  */
 class SentenceSplitter {
     constructor() {
