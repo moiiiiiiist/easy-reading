@@ -9,6 +9,8 @@
 - 🎤 **高质量TTS**: 支持Google Cloud Text-to-Speech、Web Speech API和Google Translate TTS
 - 📖 **阅读模式**: 逐句阅读，支持高亮和发音
 - 💾 **本地存储**: 所有数据本地存储，保护隐私
+- 🔤 **音标显示**: 自动获取并显示单词音标
+- 🔊 **智能播放**: 单词解释时自动播放三次发音，支持静默播放
 
 ## 安装和设置
 
@@ -65,10 +67,15 @@ npm run dev
 
 ### 5. 测试配置
 
-你可以使用 `test-api-key.html` 页面来测试API Key配置：
+你可以使用以下测试页面：
+
+- **API Key测试**: `test-api-key.html` - 测试Google Cloud API Key配置
+- **音标测试**: `test-phonetic.html` - 测试音标获取和自动播放功能
+
 ```bash
 # 直接在浏览器中打开
 open test-api-key.html
+open test-phonetic.html
 ```
 
 ## API配置

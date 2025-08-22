@@ -51,8 +51,9 @@ class SentenceSplitter {
                 // 检查下一个字符
                 const nextChar = text[i + 1];
                 
-                // 如果下一个字符是空格或句子结束，或者是中文句号后直接是文字
-                if (!nextChar || /\s/.test(nextChar) || this.isChineseContext(char, nextChar)) {
+                // 如果下一个字符是空格、句子结束，或者是中文语境，或者是大写字母（新句子开始）
+                if (!nextChar || /\s/.test(nextChar) || this.isChineseContext(char, nextChar) || 
+                    (nextChar && /[A-Z]/.test(nextChar) && !this.isAbbreviation(currentSentence.trim() + nextChar))) {
                     const sentence = currentSentence.trim();
                     if (sentence && this.isValidSentence(sentence)) {
                         sentences.push(sentence);
@@ -112,8 +113,9 @@ class SentenceSplitter {
                 // 检查下一个字符
                 const nextChar = text[i + 1];
                 
-                // 如果下一个字符是空格或句子结束，或者是中文句号后直接是文字
-                if (!nextChar || /\s/.test(nextChar) || this.isChineseContext(char, nextChar)) {
+                // 如果下一个字符是空格、句子结束，或者是中文语境，或者是大写字母（新句子开始）
+                if (!nextChar || /\s/.test(nextChar) || this.isChineseContext(char, nextChar) || 
+                    (nextChar && /[A-Z]/.test(nextChar) && !this.isAbbreviation(currentSentence.trim() + nextChar))) {
                     const sentence = currentSentence.trim();
                     if (sentence && this.isValidSentence(sentence)) {
                         sentences.push(sentence);

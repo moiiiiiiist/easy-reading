@@ -266,10 +266,30 @@ class GoogleAPIService {
                 throw new Error('未找到单词定义');
             }
             
-            // 提取音标
+            // 提取音标 - 改进逻辑
             let phonetic = '';
             if (entry.phonetics && entry.phonetics.length > 0) {
-                phonetic = entry.phonetics.find(p => p.text)?.text || '';
+                // 优先使用有text字段的音标
+                const phoneticWithText = entry.phonetics.find(p => p.text);
+                if (phoneticWithText) {
+                    phonetic = phoneticWithText.text;
+                } else {
+                    // 如果没有text字段，尝试从audio URL推断
+                    const phoneticWithAudio = entry.phonetics.find(p => p.audio);
+                    if (phoneticWithAudio && phoneticWithAudio.audio) {
+                        // 从audio URL中提取音标信息
+                        const audioUrl = phoneticWithAudio.audio;
+                        const match = audioUrl.match(/\/([^\/]+)\.mp3$/);
+                        if (match) {
+                            phonetic = match[1].replace(/-/g, ' ');
+                        }
+                    }
+                }
+            }
+            
+            // 如果还是没有音标，尝试从entry.phonetic获取
+            if (!phonetic && entry.phonetic) {
+                phonetic = entry.phonetic;
             }
             
             // 提取定义
@@ -335,23 +355,50 @@ class GoogleAPIService {
     /**
      * 解释单词（智能选择API）
      * @param {string} word - 要解释的单词
+     * @param {string} context - 句子上下文（可选）
      * @returns {Promise<Object>} 包含解释信息的对象
      */
-    async explainWord(word) {
+    async explainWord(word, context = '') {
         // 优先使用Gemini API
         if (this.isGeminiConfigured()) {
             try {
                 const prompts = this.storage.getPrompts();
-                const explanation = await this.generateContentWithGemini(prompts.wordPrompt, word);
+                let prompt = prompts.wordPrompt;
                 
-                // 解析音标
+                // 如果有上下文，修改提示词以包含上下文信息
+                if (context && context.trim()) {
+                    prompt = `请解释这个英语单词在给定句子中的含义，不超过25字。格式为：
+1. 音标：[音标]；
+2. 中文含义（结合句子上下文）；
+3. 词根，辅助记忆。
+
+单词：${word}
+句子：${context}`;
+                }
+                
+                const explanation = await this.generateContentWithGemini(prompt, word);
+                
+                // 解析音标 - 改进正则表达式
                 const phoneticMatch = explanation.match(/[\[\u002F]([^\]\u002F]+)[\]\u002F]/);
-                const phonetic = phoneticMatch ? phoneticMatch[1] : '';
+                let phonetic = phoneticMatch ? phoneticMatch[1] : '';
+                
+                // 如果没有找到音标，尝试其他格式
+                if (!phonetic) {
+                    const phoneticMatch2 = explanation.match(/音标[：:]\s*([^\n]+)/);
+                    phonetic = phoneticMatch2 ? phoneticMatch2[1].trim() : '';
+                }
+                
+                // 如果还是没有，尝试从解释中提取音标信息
+                if (!phonetic) {
+                    const phoneticMatch3 = explanation.match(/发音[：:]\s*([^\n]+)/);
+                    phonetic = phoneticMatch3 ? phoneticMatch3[1].trim() : '';
+                }
 
                 return {
                     word: word,
                     phonetic: phonetic,
                     explanation: explanation,
+                    context: context,
                     timestamp: Date.now(),
                     source: 'Gemini AI'
                 };
@@ -362,15 +409,28 @@ class GoogleAPIService {
         
         // 备用方案：使用免费词典API
         try {
-            return await this.getWordDefinitionFromFreeDictionary(word);
+            const result = await this.getWordDefinitionFromFreeDictionary(word);
+            // 如果有上下文，在解释中添加上下文信息
+            if (context && context.trim()) {
+                result.explanation = `句子：${context}\n\n${result.explanation}\n\n注：以上解释基于词典，建议结合句子上下文理解。`;
+                result.context = context;
+            }
+            return result;
         } catch (error) {
             console.warn('免费词典API失败:', error);
             
             // 最终备用方案：基础解释
+            let explanation = `单词：${word}`;
+            if (context && context.trim()) {
+                explanation += `\n句子：${context}`;
+            }
+            explanation += `\n\n暂无法获取详细解释，请配置API或检查网络连接。\n\n建议：\n1. 查阅词典了解含义\n2. 注意单词的发音\n3. 学习相关词汇搭配`;
+            
             return {
                 word: word,
                 phonetic: '',
-                explanation: `单词：${word}\n\n暂无法获取详细解释，请配置API或检查网络连接。\n\n建议：\n1. 查阅词典了解含义\n2. 注意单词的发音\n3. 学习相关词汇搭配`,
+                explanation: explanation,
+                context: context,
                 timestamp: Date.now(),
                 source: 'Fallback'
             };

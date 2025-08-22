@@ -346,8 +346,18 @@ class ReadingApp {
      */
     async generateWordExplanation(word) {
         try {
-            const explanation = await this.googleAPI.explainWord(word);
+            // 获取当前句子作为上下文
+            const currentSentence = this.sentences[this.currentSentenceIndex] || '';
+            
+            const explanation = await this.googleAPI.explainWord(word, currentSentence);
             this.addExplanationToPanel('word', word, explanation);
+            
+            // 自动播放三次发音
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    this.playWordPronunciation(word, true); // true表示静默播放
+                }, i * 2000); // 每2秒播放一次
+            }
         } catch (error) {
             console.error('单词解释生成失败:', error);
             throw error;
@@ -466,8 +476,9 @@ class ReadingApp {
     /**
      * 播放单词发音
      * @param {string} word - 单词
+     * @param {boolean} silent - 是否静默播放（不显示提示）
      */
-    async playWordPronunciation(word) {
+    async playWordPronunciation(word, silent = false) {
         const btn = document.querySelector(`[data-word="${word}"].pronunciation-btn`);
         try {
             if (btn) {
@@ -477,21 +488,26 @@ class ReadingApp {
             
             const language = this.audioManager.detectLanguage(word);
             
-            // 显示播放状态
-            Utils.showToast(`正在播放: ${word}`, 'info', 1000);
+            // 只在非静默模式下显示播放状态
+            if (!silent) {
+                Utils.showToast(`正在播放: ${word}`, 'info', 1000);
+            }
             
             await this.audioManager.play(word, language);
             
         } catch (error) {
             console.error('播放单词发音失败:', error);
             
-            // 根据错误类型显示不同提示
-            if (error.message.includes('不支持语音合成')) {
-                Utils.showToast('您的浏览器不支持语音合成功能', 'error');
-            } else if (error.message.includes('语音合成失败')) {
-                Utils.showToast('语音播放失败，请检查系统音量设置', 'error');
-            } else {
-                Utils.showToast('发音播放失败，请稍后再试', 'error');
+            // 只在非静默模式下显示错误提示
+            if (!silent) {
+                // 根据错误类型显示不同提示
+                if (error.message.includes('不支持语音合成')) {
+                    Utils.showToast('您的浏览器不支持语音合成功能', 'error');
+                } else if (error.message.includes('语音合成失败')) {
+                    Utils.showToast('语音播放失败，请检查系统音量设置', 'error');
+                } else {
+                    Utils.showToast('发音播放失败，请稍后再试', 'error');
+                }
             }
         } finally {
             if (btn) {

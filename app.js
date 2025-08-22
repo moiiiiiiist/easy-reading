@@ -579,15 +579,16 @@ class EnglishHelper {
     /**
      * 生成单词解释
      * @param {string} word - 单词
+     * @param {string} context - 句子上下文（可选）
      */
-    async generateWordExplanation(word) {
+    async generateWordExplanation(word, context = '') {
         if (!this.googleAPI.isConfigured()) {
             Utils.showToast('请先配置Google AI API', 'error');
             return;
         }
         
         try {
-            const explanation = await this.googleAPI.explainWord(word);
+            const explanation = await this.googleAPI.explainWord(word, context);
             this.addExplanationToPanel('word', word, explanation);
         } catch (error) {
             throw error;
