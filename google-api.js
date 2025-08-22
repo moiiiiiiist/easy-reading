@@ -84,21 +84,24 @@ class GoogleAPIService {
         }
 
         try {
-            // 通过后端代理调用Google Cloud TTS API
-            const response = await fetch('/api/google-tts/synthesize', {
+            // 直接调用Google Cloud TTS API
+            const response = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${this.googleCloudApiKey}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    text,
-                    language,
-                    voiceName: options.voiceName,
-                    options: {
-                        speed: options.speed || 1.0,
+                    input: { text },
+                    voice: {
+                        languageCode: language,
+                        name: options.voiceName || this.getDefaultVoice(language),
+                        ssmlGender: options.gender || 'NEUTRAL'
+                    },
+                    audioConfig: {
+                        audioEncoding: 'MP3',
+                        speakingRate: options.speed || 1.0,
                         pitch: options.pitch || 0.0,
-                        volume: options.volume || 0.0,
-                        gender: options.gender || 'NEUTRAL'
+                        volumeGainDb: options.volume || 0.0
                     }
                 })
             });
@@ -110,10 +113,6 @@ class GoogleAPIService {
 
             const data = await response.json();
             
-            if (!data.success) {
-                throw new Error(data.error || 'TTS合成失败');
-            }
-
             if (data.audioContent) {
                 // 将base64转换为Blob
                 const audioData = atob(data.audioContent);
@@ -139,21 +138,39 @@ class GoogleAPIService {
     async validateGoogleCloudConfig(config) {
         try {
             console.log('正在验证Google Cloud配置...');
-            console.log('请求URL:', '/api/google-cloud/validate');
-            console.log('请求数据:', config);
             
-            const response = await fetch('/api/google-cloud/validate', {
+            // 直接验证API密钥是否有效
+            if (!config.apiKey || config.apiKey.trim() === '') {
+                console.error('API密钥为空');
+                return false;
+            }
+
+            // 尝试调用Google Cloud TTS API来验证密钥
+            const testResponse = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${config.apiKey}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(config)
+                body: JSON.stringify({
+                    input: { text: 'test' },
+                    voice: { languageCode: 'en-US', ssmlGender: 'NEUTRAL' },
+                    audioConfig: { audioEncoding: 'MP3' }
+                })
             });
 
-            console.log('响应状态:', response.status);
-            const data = await response.json();
-            console.log('响应数据:', data);
-            return data.success;
+            console.log('验证响应状态:', testResponse.status);
+            
+            if (testResponse.status === 200) {
+                console.log('Google Cloud API密钥验证成功');
+                return true;
+            } else if (testResponse.status === 403) {
+                console.error('API密钥无效或权限不足');
+                return false;
+            } else {
+                const errorText = await testResponse.text();
+                console.error('API验证失败:', errorText);
+                return false;
+            }
         } catch (error) {
             console.error('Google Cloud配置验证失败:', error);
             console.error('错误详情:', error.message);
