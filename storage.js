@@ -6,7 +6,8 @@ class StorageManager {
         this.keys = {
             API_CONFIG: 'english_helper_api_config',
             GEMINI_API_KEY: 'english_helper_gemini_api_key',
-            GOOGLE_CLOUD_CONFIG: 'english_helper_google_cloud_config',
+            GOOGLE_CLOUD_API_KEY: 'english_helper_google_cloud_api_key', // 改为API Key
+            GOOGLE_CLOUD_CONFIG: 'english_helper_google_cloud_config', // 保留兼容性
             WORD_PROMPT: 'english_helper_word_prompt',
             SENTENCE_PROMPT: 'english_helper_sentence_prompt',
             FONT_SIZE: 'english_helper_font_size',
@@ -168,7 +169,23 @@ class StorageManager {
     }
 
     /**
-     * 保存Google Cloud配置
+     * 保存Google Cloud API Key
+     * @param {string} apiKey - Google Cloud API Key
+     */
+    saveGoogleCloudApiKey(apiKey) {
+        return this.set(this.keys.GOOGLE_CLOUD_API_KEY, apiKey);
+    }
+
+    /**
+     * 获取Google Cloud API Key
+     * @returns {string|null}
+     */
+    getGoogleCloudApiKey() {
+        return this.get(this.keys.GOOGLE_CLOUD_API_KEY);
+    }
+
+    /**
+     * 保存Google Cloud配置（兼容性方法）
      * @param {Object} config - Google Cloud配置
      */
     saveGoogleCloudConfig(config) {
@@ -176,7 +193,7 @@ class StorageManager {
     }
 
     /**
-     * 获取Google Cloud配置
+     * 获取Google Cloud配置（兼容性方法）
      * @returns {Object|null}
      */
     getGoogleCloudConfig() {

@@ -49,7 +49,7 @@ class MainApp {
             saveApiBtn: document.getElementById('saveApiBtn'),
             
             // Google Cloud配置
-            googleCloudServiceAccountJson: document.getElementById('googleCloudServiceAccountJson'),
+            googleCloudApiKey: document.getElementById('googleCloudApiKey'),
             saveGoogleCloudBtn: document.getElementById('saveGoogleCloudBtn'),
             testGoogleCloudBtn: document.getElementById('testGoogleCloudBtn'),
             googleCloudStatus: document.getElementById('googleCloudStatus'),
@@ -331,21 +331,10 @@ class MainApp {
             this.elements.geminiApiKey.value = geminiApiKey;
         }
         
-        // 加载Google Cloud配置
-        const googleCloudConfig = this.storage.getGoogleCloudConfig();
-        if (googleCloudConfig) {
-            // 如果有完整的JSON配置，显示JSON格式
-            if (googleCloudConfig.service_account_json) {
-                this.elements.googleCloudServiceAccountJson.value = googleCloudConfig.service_account_json;
-            } else {
-                // 否则显示单独字段
-                this.elements.googleCloudProjectId.value = googleCloudConfig.project_id || '';
-                this.elements.googleCloudClientEmail.value = googleCloudConfig.client_email || '';
-                this.elements.googleCloudPrivateKey.value = googleCloudConfig.private_key || '';
-            }
-            
-            // 同步配置到服务器端
-            this.syncGoogleCloudConfigToServer(googleCloudConfig);
+        // 加载Google Cloud API Key
+        const googleCloudApiKey = this.storage.getGoogleCloudApiKey();
+        if (googleCloudApiKey) {
+            this.elements.googleCloudApiKey.value = googleCloudApiKey;
         }
         
         // 更新API状态
@@ -482,65 +471,35 @@ class MainApp {
     }
 
     /**
-     * 保存Google Cloud配置
+     * 保存Google Cloud API Key
      */
     async saveGoogleCloudConfig() {
         try {
             Utils.setLoading(this.elements.saveGoogleCloudBtn, true);
             
-            const serviceAccountJson = this.elements.googleCloudServiceAccountJson.value.trim();
+            const apiKey = this.elements.googleCloudApiKey.value.trim();
             
-            let config = {};
-            
-            // 优先使用JSON格式
-            if (serviceAccountJson) {
-                try {
-                    const jsonConfig = JSON.parse(serviceAccountJson);
-                    config = {
-                        service_account_json: serviceAccountJson,
-                        project_id: jsonConfig.project_id,
-                        client_email: jsonConfig.client_email,
-                        private_key: jsonConfig.private_key
-                    };
-                } catch (error) {
-                    Utils.showToast('JSON格式错误，请检查服务账号JSON文件格式', 'error');
-                    return;
-                }
-            } else {
-                Utils.showToast('请提供服务账号JSON文件', 'error');
+            if (!apiKey) {
+                Utils.showToast('请输入Google Cloud API Key', 'error');
                 return;
             }
             
-            // 验证配置
-            const isValid = await this.googleAPI.validateGoogleCloudConfig(config);
+            // 验证API Key
+            const isValid = await this.googleAPI.validateGoogleCloudApiKey(apiKey);
             if (!isValid) {
-                Utils.showToast('Google Cloud配置验证失败，请检查配置信息', 'error');
+                Utils.showToast('Google Cloud API Key验证失败，请检查API Key是否正确', 'error');
                 return;
             }
             
-            // 发送配置到服务器端
-            const serverResponse = await fetch('/api/google-cloud/config', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(config)
-            });
-            
-            if (!serverResponse.ok) {
-                const errorData = await serverResponse.json();
-                throw new Error(errorData.error || '服务器配置保存失败');
-            }
-            
-            // 保存配置到本地存储
-            this.googleAPI.setGoogleCloudConfig(config);
+            // 保存API Key到本地存储
+            this.googleAPI.setGoogleCloudApiKey(apiKey);
             this.updateGoogleCloudStatus();
             
-            Utils.showToast('Google Cloud配置保存成功', 'success');
+            Utils.showToast('Google Cloud API Key保存成功', 'success');
             
         } catch (error) {
-            console.error('保存Google Cloud配置失败:', error);
-            Utils.showToast('Google Cloud配置保存失败: ' + error.message, 'error');
+            console.error('保存Google Cloud API Key失败:', error);
+            Utils.showToast('Google Cloud API Key保存失败: ' + error.message, 'error');
         } finally {
             Utils.setLoading(this.elements.saveGoogleCloudBtn, false);
         }

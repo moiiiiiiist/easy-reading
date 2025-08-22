@@ -65,11 +65,22 @@
                     <h3>Google Cloud TTS 配置</h3>
                     <p class="setting-description">配置Google Cloud Text-to-Speech以获得更高质量的语音合成</p>
                     
-                    <label for="googleCloudServiceAccountJson">服务账号JSON文件（推荐）：</label>
-                    <textarea id="googleCloudServiceAccountJson" placeholder='{"type":"service_account","project_id":"your-project-id","private_key":"-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n","client_email":"your-service@your-project.iam.gserviceaccount.com",...}' rows="8"></textarea>
-                    <p class="setting-hint">直接粘贴完整的服务账号JSON文件，系统会自动解析所需信息</p>
+                    <label for="googleCloudApiKey">Google Cloud API Key：</label>
+                    <textarea id="googleCloudApiKey" placeholder="输入你的Google Cloud API Key" rows="3"></textarea>
+                    <p class="setting-hint">获取API Key请参考下方说明</p>
                     
-
+                    <div class="api-key-help">
+                        <h4>如何获取Google Cloud API Key：</h4>
+                        <ol>
+                            <li>访问 <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></li>
+                            <li>创建新项目或选择现有项目</li>
+                            <li>启用 <strong>Cloud Text-to-Speech API</strong></li>
+                            <li>进入"API和服务" > "凭据"</li>
+                            <li>点击"创建凭据" > "API密钥"</li>
+                            <li>复制生成的API密钥并粘贴到上方输入框</li>
+                        </ol>
+                        <p><strong>注意：</strong>API Key方式有使用限制，每月前400万字符免费，超出部分按量计费。</p>
+                    </div>
                     
                     <button id="saveGoogleCloudBtn" class="btn secondary">保存Google Cloud配置</button>
                     <button id="testGoogleCloudBtn" class="btn primary">测试Google Cloud TTS</button>

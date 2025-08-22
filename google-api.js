@@ -4,7 +4,7 @@
 class GoogleAPIService {
     constructor() {
         this.geminiApiKey = null;
-        this.googleCloudConfig = null;
+        this.googleCloudApiKey = null; // 改为使用API Key
         this.storage = new StorageManager();
         this.loadConfig();
     }
@@ -14,7 +14,7 @@ class GoogleAPIService {
      */
     loadConfig() {
         this.geminiApiKey = this.storage.getGeminiApiKey();
-        this.googleCloudConfig = this.storage.getGoogleCloudConfig();
+        this.googleCloudApiKey = this.storage.getGoogleCloudApiKey(); // 加载API Key
     }
 
     /**
@@ -27,12 +27,12 @@ class GoogleAPIService {
     }
 
     /**
-     * 设置Google Cloud配置
-     * @param {Object} config - Google Cloud配置对象
+     * 设置Google Cloud API Key
+     * @param {string} apiKey - Google Cloud API Key
      */
-    setGoogleCloudConfig(config) {
-        this.googleCloudConfig = config;
-        return this.storage.saveGoogleCloudConfig(config);
+    setGoogleCloudApiKey(apiKey) {
+        this.googleCloudApiKey = apiKey;
+        return this.storage.saveGoogleCloudApiKey(apiKey);
     }
 
     /**
@@ -48,7 +48,7 @@ class GoogleAPIService {
      * @returns {boolean}
      */
     isGoogleCloudConfigured() {
-        return !!(this.googleCloudConfig && this.googleCloudConfig.project_id && this.googleCloudConfig.private_key);
+        return !!(this.googleCloudApiKey && this.googleCloudApiKey.trim() !== '');
     }
 
     /**
@@ -131,22 +131,21 @@ class GoogleAPIService {
     }
 
     /**
-     * 验证Google Cloud配置
-     * @param {Object} config - 配置对象
+     * 验证Google Cloud API Key
+     * @param {string} apiKey - API Key
      * @returns {Promise<boolean>}
      */
-    async validateGoogleCloudConfig(config) {
+    async validateGoogleCloudApiKey(apiKey) {
         try {
-            console.log('正在验证Google Cloud配置...');
+            console.log('正在验证Google Cloud API Key...');
             
-            // 直接验证API密钥是否有效
-            if (!config.apiKey || config.apiKey.trim() === '') {
-                console.error('API密钥为空');
+            if (!apiKey || apiKey.trim() === '') {
+                console.error('API Key为空');
                 return false;
             }
 
             // 尝试调用Google Cloud TTS API来验证密钥
-            const testResponse = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${config.apiKey}`, {
+            const testResponse = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -161,10 +160,10 @@ class GoogleAPIService {
             console.log('验证响应状态:', testResponse.status);
             
             if (testResponse.status === 200) {
-                console.log('Google Cloud API密钥验证成功');
+                console.log('Google Cloud API Key验证成功');
                 return true;
             } else if (testResponse.status === 403) {
-                console.error('API密钥无效或权限不足');
+                console.error('API Key无效或权限不足');
                 return false;
             } else {
                 const errorText = await testResponse.text();
@@ -172,7 +171,7 @@ class GoogleAPIService {
                 return false;
             }
         } catch (error) {
-            console.error('Google Cloud配置验证失败:', error);
+            console.error('Google Cloud API Key验证失败:', error);
             console.error('错误详情:', error.message);
             return false;
         }

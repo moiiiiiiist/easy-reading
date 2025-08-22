@@ -40,31 +40,36 @@ npm run dev
 
 1. 访问 [Google Cloud Console](https://console.cloud.google.com/)
 2. 创建新项目或选择现有项目
-3. 启用 Text-to-Speech API
+3. 启用 **Cloud Text-to-Speech API**
 
-### 2. 创建服务账户
+### 2. 创建API Key
 
-1. 在Google Cloud Console中，进入"IAM和管理" > "服务账户"
-2. 点击"创建服务账户"
-3. 填写服务账户名称和描述
-4. 为服务账户分配"Cloud Text-to-Speech API 用户"角色
+1. 在Google Cloud Console中，进入"API和服务" > "凭据"
+2. 点击"创建凭据" > "API密钥"
+3. 复制生成的API密钥
 
-### 3. 下载私钥
-
-1. 点击刚创建的服务账户
-2. 进入"密钥"标签页
-3. 点击"添加密钥" > "创建新密钥"
-4. 选择JSON格式，下载私钥文件
-
-### 4. 配置应用
+### 3. 配置应用
 
 1. 打开应用设置页面
-2. 在"Google Cloud TTS 配置"部分填写：
-   - **项目ID**: 你的Google Cloud项目ID
-   - **客户端邮箱**: 服务账户的邮箱地址
-   - **私钥**: 从下载的JSON文件中复制private_key字段的内容
-3. 点击"保存Google Cloud配置"
-4. 点击"测试Google Cloud TTS"验证配置
+2. 在"Google Cloud TTS 配置"部分：
+   - 粘贴你的Google Cloud API Key
+   - 点击"保存Google Cloud配置"
+   - 点击"测试Google Cloud TTS"验证配置
+
+### 4. 使用限制
+
+- **免费配额**: 每月前 4,000,000 个字符免费
+- **超出费用**: 每 1,000,000 个字符约 $4.00 USD
+- **速率限制**: 每分钟最多 300 个请求
+- **功能限制**: 只能使用标准语音，无法使用 Neural2 和 Studio 语音
+
+### 5. 测试配置
+
+你可以使用 `test-api-key.html` 页面来测试API Key配置：
+```bash
+# 直接在浏览器中打开
+open test-api-key.html
+```
 
 ## API配置
 
