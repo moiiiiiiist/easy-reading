@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>轻松阅读</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- 主页面 - 文章管理和设置 -->
+        <div id="mainPage" class="page active">
+            <header>
+                <h1>轻松阅读</h1>
+                <nav>
+                    <button id="manageBtn" class="nav-btn active">文章管理</button>
+                    <button id="settingsBtn" class="nav-btn">设置</button>
+                </nav>
+            </header>
+
+            <!-- 文章管理页面 -->
+            <div id="articleManager" class="section active">
+                <div class="upload-section">
+                    <h2>导入文章</h2>
+                    <div class="file-upload">
+                        <input type="file" id="fileInput" accept=".txt" style="display: none;">
+                        <button id="uploadBtn" class="btn primary">选择TXT文件</button>
+                        <span id="fileName" class="file-name"></span>
+                    </div>
+                </div>
+
+                <div class="article-list-section">
+                    <h2>文章列表</h2>
+                    <div id="articleList" class="article-list">
+                        <p class="placeholder">暂无文章，请先导入文章</p>
+                    </div>
+                </div>
+
+                <div class="article-preview">
+                    <h3 id="articleTitle">文章预览</h3>
+                    <div id="articleStats" class="stats"></div>
+                    <div id="articleContent" class="content-preview"></div>
+                    <button id="startReadingBtn" class="btn primary" style="display: none;">开始阅读</button>
+                    <button id="deleteArticleBtn" class="btn secondary" style="display: none;">删除文章</button>
+                </div>
+            </div>
+
+            <!-- 设置页面 -->
+            <div id="settingsPanel" class="section">
+                <h2>设置</h2>
+                
+                <div class="setting-group">
+                    <h3>API 配置</h3>
+                    <label for="geminiApiKey">Google AI Studio API Key (Gemini)：</label>
+                    <textarea id="geminiApiKey" placeholder="输入你的Google AI Studio API Key"></textarea>
+                    
+                    <button id="saveApiBtn" class="btn secondary">保存API配置</button>
+                    <div class="api-status">
+                        <p><strong>当前状态：</strong></p>
+                        <div id="apiStatus">未配置API</div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Google Cloud TTS 配置</h3>
+                    <p class="setting-description">配置Google Cloud Text-to-Speech以获得更高质量的语音合成</p>
+                    
+                    <label for="googleCloudServiceAccountJson">服务账号JSON文件（推荐）：</label>
+                    <textarea id="googleCloudServiceAccountJson" placeholder='{"type":"service_account","project_id":"your-project-id","private_key":"-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n","client_email":"your-service@your-project.iam.gserviceaccount.com",...}' rows="8"></textarea>
+                    <p class="setting-hint">直接粘贴完整的服务账号JSON文件，系统会自动解析所需信息</p>
+                    
+
+                    
+                    <button id="saveGoogleCloudBtn" class="btn secondary">保存Google Cloud配置</button>
+                    <button id="testGoogleCloudBtn" class="btn primary">测试Google Cloud TTS</button>
+                    
+                    <div class="api-status">
+                        <p><strong>Google Cloud状态：</strong></p>
+                        <div id="googleCloudStatus">未配置</div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>自定义提示词</h3>
+                    <label for="wordPrompt">单词解释提示词：</label>
+                    <textarea id="wordPrompt" placeholder="用于解释单词的AI提示词"></textarea>
+                    
+                    <label for="sentencePrompt">句子分析提示词：</label>
+                    <textarea id="sentencePrompt" placeholder="用于分析句子的AI提示词"></textarea>
+                    
+                    <button id="savePromptsBtn" class="btn secondary">保存提示词</button>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Google Cloud TTS 语音设置</h3>
+                    <p class="setting-description">配置Google Cloud TTS的语音参数，获得更高质量的语音合成效果</p>
+                    
+                    <label for="ttsVoice">语音选择：</label>
+                    <select id="ttsVoice">
+                        <option value="en-US-Standard-A">美式英语 - 女声A</option>
+                        <option value="en-US-Standard-B">美式英语 - 男声B</option>
+                        <option value="en-US-Standard-C" selected>美式英语 - 女声C</option>
+                        <option value="en-US-Standard-D">美式英语 - 男声D</option>
+                        <option value="en-US-Standard-E">美式英语 - 女声E</option>
+                        <option value="en-US-Standard-F">美式英语 - 女声F</option>
+                        <option value="en-US-Standard-G">美式英语 - 女声G</option>
+                        <option value="en-US-Standard-H">美式英语 - 女声H</option>
+                        <option value="en-US-Standard-I">美式英语 - 男声I</option>
+                        <option value="en-US-Standard-J">美式英语 - 男声J</option>
+                        <option value="en-GB-Standard-A">英式英语 - 女声A</option>
+                        <option value="en-GB-Standard-B">英式英语 - 男声B</option>
+                        <option value="en-GB-Standard-C">英式英语 - 女声C</option>
+                        <option value="en-GB-Standard-D">英式英语 - 男声D</option>
+                        <option value="en-GB-Standard-F">英式英语 - 女声F</option>
+                        <option value="en-GB-Standard-G">英式英语 - 女声G</option>
+                        <option value="en-GB-Standard-H">英式英语 - 女声H</option>
+                        <option value="en-GB-Standard-I">英式英语 - 男声I</option>
+                        <option value="en-GB-Standard-J">英式英语 - 男声J</option>
+                    </select>
+                    
+                    <label for="ttsSpeed">语速：</label>
+                    <select id="ttsSpeed">
+                        <option value="0.5">0.5x - 很慢</option>
+                        <option value="0.75">0.75x - 慢</option>
+                        <option value="0.9" selected>0.9x - 稍慢</option>
+                        <option value="1.0">1.0x - 正常</option>
+                        <option value="1.25">1.25x - 稍快</option>
+                        <option value="1.5">1.5x - 快</option>
+                        <option value="2.0">2.0x - 很快</option>
+                    </select>
+                    
+                    <label for="ttsPitch">音调：</label>
+                    <select id="ttsPitch">
+                        <option value="-20.0">-20.0 - 很低</option>
+                        <option value="-10.0">-10.0 - 低</option>
+                        <option value="0.0" selected>0.0 - 正常</option>
+                        <option value="10.0">10.0 - 高</option>
+                        <option value="20.0">20.0 - 很高</option>
+                    </select>
+                    
+                    <button id="saveTTSBtn" class="btn secondary">保存Google Cloud TTS设置</button>
+                    <button id="testTTSBtn" class="btn primary">测试Google Cloud TTS发音</button>
+                </div>
+
+                <div class="setting-group">
+                    <h3>阅读界面设置</h3>
+                    <label for="fontSize">字体大小：</label>
+                    <input type="range" id="fontSize" min="12" max="24" value="16">
+                    <span id="fontSizeValue">16px</span>
+                    <button id="saveFontBtn" class="btn secondary">保存字体设置</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="utils.js"></script>
+    <script src="storage.js"></script>
+    <script src="sentence-splitter.js"></script>
+    <script src="google-api.js"></script>
+    <script src="audio-manager.js"></script>
+    <script src="main-app.js"></script>
+</body>
+</html>

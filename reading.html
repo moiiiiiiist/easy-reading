@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章阅读 - 轻松阅读</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- 阅读页面 -->
+        <div id="readingPage" class="page reading-layout active">
+            <!-- 侧边返回按钮 -->
+            <button id="backBtn" class="back-btn">
+                <span>&lt;</span>
+            </button>
+
+            <div class="reading-container">
+                <!-- 词句解释栏 -->
+                <div id="explanationPanel" class="explanation-panel">
+                    <div class="explanation-header">
+                        <h3>词句解释</h3>
+                        <div class="font-size-controls">
+                            <button id="decreaseFontBtn" class="font-size-btn" title="减小字体">A-</button>
+                            <button id="increaseFontBtn" class="font-size-btn" title="增大字体">A+</button>
+                        </div>
+                    </div>
+                    <div id="explanationContent" class="explanation-content">
+                        <p class="placeholder">点击单词或收藏句子查看解释</p>
+                    </div>
+                </div>
+
+                <!-- 分隔条 -->
+                <div id="resizer" class="resizer"></div>
+
+                <!-- 文章阅读栏 -->
+                <div id="readingPanel" class="reading-panel">
+                    <div id="readingContent" class="reading-content"></div>
+                    
+                    <!-- 控制栏 -->
+                    <div class="controls">
+                        <div id="progressStatus" class="progress-status">0/0</div>
+                        <div class="control-buttons">
+                            <button id="playPauseBtn" class="btn control">▶</button>
+                            <button id="prevBtn" class="btn control">⏮</button>
+                            <button id="nextBtn" class="btn control">⏭</button>
+                            <button id="favoriteBtn" class="btn control">♡</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Markdown 解析库 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
+    
+    <script src="utils.js"></script>
+    <script src="storage.js"></script>
+    <script src="sentence-splitter.js"></script>
+    <script src="google-api.js"></script>
+    <script src="audio-manager.js"></script>
+    <script src="reading-app.js"></script>
+</body>
+</html>
