@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>句子分割器测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .sentence {
+            display: block;
+            margin: 5px 0;
+            padding: 8px;
+            background-color: #f5f5f5;
+            border-radius: 3px;
+            border-left: 3px solid #007bff;
+        }
+        .stats {
+            background-color: #e7f3ff;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>句子分割器测试</h1>
+    
+    <div class="test-section">
+        <h3>输入测试文本：</h3>
+        <textarea id="testText" placeholder="在这里输入要测试的文本...">
+Hello. How are you? I am fine! Mr. Smith went to the store. He bought some milk. The weather is nice today. It's sunny and warm. What time is it? It's 3:30 p.m. We should go now. I love reading books. My favorite author is J.K. Rowling. This is sentence one. This is sentence two. This is sentence three! He said, 'Hello there.' Then he left. The meeting starts at 9:00 a.m. Please be on time. She works for ABC Inc. It's a great company. Do you like pizza? I love it! It's delicious.
+
+今天天气很好。我们去公园吧？太棒了！
+        </textarea>
+        <button onclick="testSplitter()">测试分割</button>
+        <button onclick="clearResults()">清空结果</button>
+    </div>
+
+    <div class="test-section">
+        <h3>分割统计：</h3>
+        <div id="stats" class="stats">
+            点击"测试分割"按钮开始测试
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>分割结果：</h3>
+        <div id="results">
+            句子将在这里显示
+        </div>
+    </div>
+
+    <script src="sentence-splitter.js"></script>
+    <script>
+        const splitter = new SentenceSplitter();
+
+        function testSplitter() {
+            const text = document.getElementById('testText').value;
+            const resultsDiv = document.getElementById('results');
+            const statsDiv = document.getElementById('stats');
+            
+            if (!text.trim()) {
+                alert('请输入测试文本');
+                return;
+            }
+
+            // 分割句子
+            const { sentences, paragraphBreaks } = splitter.splitIntoSentencesWithBreaks(text);
+            const stats = splitter.getTextStats(text, sentences);
+
+            // 显示统计信息
+            statsDiv.innerHTML = `
+                <strong>统计信息：</strong><br>
+                ${splitter.formatStats(stats)}<br>
+                文本格式：${splitter.detectTextFormat(text)}<br>
+                段落分隔位置：${paragraphBreaks.join(', ') || '无'}
+            `;
+
+            // 显示分割结果
+            resultsDiv.innerHTML = '';
+            if (sentences.length === 0) {
+                resultsDiv.innerHTML = '<p style="color: red;">没有分割出任何句子！</p>';
+                return;
+            }
+
+            sentences.forEach((sentence, index) => {
+                const sentenceDiv = document.createElement('div');
+                sentenceDiv.className = 'sentence';
+                sentenceDiv.innerHTML = `
+                    <strong>${index + 1}.</strong> ${sentence}
+                    ${paragraphBreaks.includes(index) ? '<br><em>（段落分隔）</em>' : ''}
+                `;
+                resultsDiv.appendChild(sentenceDiv);
+            });
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '句子将在这里显示';
+            document.getElementById('stats').innerHTML = '点击"测试分割"按钮开始测试';
+        }
+
+        // 页面加载时自动测试一次
+        window.onload = function() {
+            testSplitter();
+        };
+    </script>
+</body>
+</html> 

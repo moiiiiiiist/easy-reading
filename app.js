@@ -520,7 +520,7 @@ class EnglishHelper {
             });
             
             // 保存到存储
-            this.storage.addHighlightedWord(word, this.currentSentenceIndex);
+            this.storage.addHighlightedWord(this.currentArticleId, word, this.currentSentenceIndex);
             
             // 生成解释
             await this.generateWordExplanation(word);
@@ -542,7 +542,7 @@ class EnglishHelper {
         });
         
         // 从存储中移除
-        this.storage.removeHighlightedWord(word);
+        this.storage.removeHighlightedWord(this.currentArticleId, word);
         
         // 移除解释
         this.removeWordExplanation(word);
@@ -558,14 +558,14 @@ class EnglishHelper {
         if (sentenceElement.classList.contains('favorited')) {
             // 取消收藏
             sentenceElement.classList.remove('favorited');
-            this.storage.removeFavorite(this.currentSentenceIndex);
+            this.storage.removeFavorite(this.currentArticleId, this.currentSentenceIndex);
             this.removeSentenceExplanation(this.currentSentenceIndex);
             this.updateFavoriteButton(false);
         } else {
             // 添加收藏
             try {
                 sentenceElement.classList.add('favorited');
-                this.storage.addFavorite(this.currentSentenceIndex, sentence);
+                this.storage.addFavorite(this.currentArticleId, this.currentSentenceIndex, sentence);
                 await this.generateSentenceExplanation(sentence, this.currentSentenceIndex);
                 this.updateFavoriteButton(true);
             } catch (error) {
@@ -748,7 +748,7 @@ class EnglishHelper {
      */
     applyHighlightStates() {
         // 应用单词高亮
-        const highlightedWords = this.storage.getHighlightedWords();
+        const highlightedWords = this.storage.getHighlightedWords(this.currentArticleId);
         highlightedWords.forEach(item => {
             document.querySelectorAll(`[data-word="${item.word}"]`).forEach(el => {
                 el.classList.add('highlighted');
@@ -756,7 +756,7 @@ class EnglishHelper {
         });
         
         // 应用句子收藏状态
-        const favorites = this.storage.getFavorites();
+        const favorites = this.storage.getFavorites(this.currentArticleId);
         favorites.forEach(item => {
             const sentenceElement = document.querySelector(`[data-index="${item.index}"]`);
             if (sentenceElement) {

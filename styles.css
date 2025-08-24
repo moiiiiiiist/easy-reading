@@ -748,6 +748,7 @@ nav {
     line-height: 2;
     font-size: 16px;
     height: calc(100vh - 100px); /* 减去控制栏高度 */
+    white-space: pre-wrap; /* 保持原文的换行符和空格格式 */
 }
 
 /* 句子样式 */

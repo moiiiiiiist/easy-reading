@@ -1,6 +1,6 @@
 /**
  * 句子分割器 - 智能处理中英文文本分割
- * 版本: 2.0 - 支持无空格句子分割
+ * 版本: 4.0 - 极简版本，只保留缩写词判定和句子合并判定
  */
 class SentenceSplitter {
     constructor() {
@@ -18,60 +18,6 @@ class SentenceSplitter {
         
         // 数字序号模式（支持有空格和无空格的情况）
         this.numberedPattern = /^\d+\./;
-    }
-
-    /**
-     * 按行分割文本（每行一个句子）
-     * @param {string} text - 要分割的文本
-     * @returns {Array} 句子数组
-     */
-    splitByLines(text) {
-        if (!text || typeof text !== 'string') {
-            return [];
-        }
-
-        // 按换行符分割，过滤空行
-        const lines = text.split('\n')
-            .map(line => line.trim())
-            .filter(line => line.length > 0);
-
-        return lines;
-    }
-
-    /**
-     * 检测文本格式类型
-     * @param {string} text - 要检测的文本
-     * @returns {string} 格式类型：'line-by-line' 或 'continuous'
-     */
-    detectTextFormat(text) {
-        if (!text || typeof text !== 'string') {
-            return 'continuous';
-        }
-
-        const lines = text.split('\n').filter(line => line.trim().length > 0);
-        
-        if (lines.length === 0) {
-            return 'continuous';
-        }
-
-        // 检查是否每行都是一个完整的句子
-        let lineSentenceCount = 0;
-        let totalSentences = 0;
-
-        for (const line of lines) {
-            const trimmedLine = line.trim();
-            if (trimmedLine.length === 0) continue;
-
-            // 检查这一行是否以句子结束符结尾
-            if (this.sentenceEnders.test(trimmedLine[trimmedLine.length - 1])) {
-                lineSentenceCount++;
-            }
-            totalSentences++;
-        }
-
-        // 如果大部分行都是完整句子，则认为是行分割格式
-        const ratio = lineSentenceCount / totalSentences;
-        return ratio > 0.7 ? 'line-by-line' : 'continuous';
     }
 
     /**
@@ -97,8 +43,12 @@ class SentenceSplitter {
 
             // 检查是否遇到句子结束符
             if (this.sentenceEnders.test(char)) {
-                // 检查是否为缩写词
-                if (this.isAbbreviation(currentSentence.trim())) {
+                // 获取当前句子的最后一个词（包含当前字符）
+                const words = currentSentence.trim().split(/\s+/);
+                const lastWord = words[words.length - 1];
+                
+                // 检查是否为缩写词、数字序号等
+                if (this.isAbbreviation(lastWord)) {
                     i++;
                     continue;
                 }
@@ -106,11 +56,16 @@ class SentenceSplitter {
                 // 检查下一个字符
                 const nextChar = text[i + 1];
                 
-                // 如果下一个字符是空格、句子结束，或者是中文语境，或者是大写字母（新句子开始）
-                if (!nextChar || /\s/.test(nextChar) || this.isChineseContext(char, nextChar) || 
-                    (nextChar && /[A-Z]/.test(nextChar) && !this.isAbbreviation(currentSentence.trim() + nextChar))) {
+                // 简化的分割条件：
+                // 1. 没有下一个字符（文本结束）
+                // 2. 下一个字符是空格
+                // 3. 下一个字符是大写字母（新句子开始）
+                if (!nextChar || 
+                    /\s/.test(nextChar) || 
+                    (nextChar && /[A-Z]/.test(nextChar))) {
+                    
                     const sentence = currentSentence.trim();
-                    if (sentence && this.isValidSentence(sentence)) {
+                    if (sentence) {
                         sentences.push(sentence);
                     }
                     currentSentence = '';
@@ -122,7 +77,7 @@ class SentenceSplitter {
 
         // 处理最后一个句子（如果没有结束标点）
         const lastSentence = currentSentence.trim();
-        if (lastSentence && this.isValidSentence(lastSentence)) {
+        if (lastSentence) {
             sentences.push(lastSentence);
         }
 
@@ -140,25 +95,34 @@ class SentenceSplitter {
             return { sentences: [], paragraphBreaks: [] };
         }
 
-        // 检测文本格式
-        const format = this.detectTextFormat(text);
+        // 预处理：统一换行符
+        text = text.replace(/\r\n/g, '\n'); // 统一换行符
+        text = text.replace(/\r/g, '\n'); // 处理Mac格式
+        text = text.trim();
+
+        // 检查文本格式：如果每行都是一个完整的句子（以数字开头），按行分割
+        const lines = text.split('\n');
         
-        if (format === 'line-by-line') {
-            // 使用行分割模式
-            const sentences = this.splitByLines(text);
+        // 检查是否大部分行都以数字开头（编号列表格式）
+        const numberedLines = lines.filter(line => /^\d+\./.test(line.trim()));
+        
+        if (numberedLines.length > lines.length * 0.5) {
+            // 这是一个编号列表，按行分割
+            const sentences = lines
+                .map(line => line.trim())
+                .filter(line => line.length > 0);
+            
             return {
                 sentences: sentences,
-                paragraphBreaks: [] // 行分割模式下没有段落分隔
+                paragraphBreaks: []
             };
         }
 
-        // 使用连续文本分割模式
-        // 预处理：保留段落结构
+        // 按原来的逻辑处理段落文本
         // 将连续的换行符标准化为双换行符
         text = text.replace(/\n\s*\n/g, '\n\n');
-        // 清理行内多余的空白字符
+        // 清理行内多余的制表符和空格，但保留换行符
         text = text.replace(/[ \t]+/g, ' ');
-        text = text.trim();
         
         const sentences = [];
         const paragraphBreaks = [];
@@ -172,8 +136,12 @@ class SentenceSplitter {
 
             // 检查是否遇到句子结束符
             if (this.sentenceEnders.test(char)) {
-                // 检查是否为缩写词
-                if (this.isAbbreviation(currentSentence.trim())) {
+                // 获取当前句子的最后一个词（包含当前字符）
+                const words = currentSentence.trim().split(/\s+/);
+                const lastWord = words[words.length - 1];
+                
+                // 检查是否为缩写词、数字序号等
+                if (this.isAbbreviation(lastWord)) {
                     i++;
                     continue;
                 }
@@ -181,16 +149,23 @@ class SentenceSplitter {
                 // 检查下一个字符
                 const nextChar = text[i + 1];
                 
-                // 如果下一个字符是空格、句子结束，或者是中文语境，或者是大写字母（新句子开始）
-                if (!nextChar || /\s/.test(nextChar) || this.isChineseContext(char, nextChar) || 
-                    (nextChar && /[A-Z]/.test(nextChar) && !this.isAbbreviation(currentSentence.trim() + nextChar))) {
+                // 简化的分割条件：
+                // 1. 没有下一个字符（文本结束）
+                // 2. 下一个字符是空格
+                // 3. 下一个字符是大写字母（新句子开始）
+                if (!nextChar || 
+                    /\s/.test(nextChar) || 
+                    (nextChar && /[A-Z]/.test(nextChar))) {
+                    
                     const sentence = currentSentence.trim();
-                    if (sentence && this.isValidSentence(sentence)) {
+                    if (sentence) {
                         sentences.push(sentence);
                         
                         // 检查句子后是否有段落分隔
                         const remainingText = text.substring(i + 1);
-                        if (remainingText.startsWith('\n\n')) {
+                        // 检查双换行符（明确的段落分隔）或单换行符后跟大写字母（可能的段落开始）
+                        if (remainingText.startsWith('\n\n') || 
+                            (remainingText.startsWith('\n') && remainingText.length > 1 && /[A-Z]/.test(remainingText[1]))) {
                             paragraphBreaks.push(sentenceIndex);
                         }
                         
@@ -205,7 +180,7 @@ class SentenceSplitter {
 
         // 处理最后一个句子（如果没有结束标点）
         const lastSentence = currentSentence.trim();
-        if (lastSentence && this.isValidSentence(lastSentence)) {
+        if (lastSentence) {
             sentences.push(lastSentence);
         }
 
@@ -231,74 +206,31 @@ class SentenceSplitter {
 
     /**
      * 检查是否为缩写词
-     * @param {string} text - 当前句子文本
+     * @param {string} text - 要检查的文本
      * @returns {boolean}
      */
     isAbbreviation(text) {
-        // 获取最后一个单词（包括点号）
-        const words = text.split(/\s+/);
-        const lastWord = words[words.length - 1];
-        
         // 检查是否在缩写词列表中
-        if (this.abbreviations.has(lastWord)) {
-            return true;
-        }
-
-        // 检查数字后的点号（如 1. 2. 等）
-        if (this.numberedPattern.test(lastWord)) {
-            return true;
-        }
-
-        // 检查单个大写字母后的点号（如 A. B. C.）
-        if (/^[A-Z]\.$/.test(lastWord)) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * 检查是否为中文语境
-     * @param {string} currentChar - 当前字符
-     * @param {string} nextChar - 下一个字符
-     * @returns {boolean}
-     */
-    isChineseContext(currentChar, nextChar) {
-        // 中文句号后面直接跟中文字符
-        if (/[。！？]/.test(currentChar) && nextChar && /[\u4e00-\u9fa5]/.test(nextChar)) {
+        if (this.abbreviations.has(text.toLowerCase())) {
             return true;
         }
         
-        // 英文句号后面直接跟中文字符
-        if (/[.!?]/.test(currentChar) && nextChar && /[\u4e00-\u9fa5]/.test(nextChar)) {
+        // 检查是否为数字序号（如 1., 2., 10., 100.）
+        if (/^\d+\.$/.test(text.trim())) {
             return true;
         }
-
+        
+        // 检查是否为单个大写字母加句号（如 A., B., C.）
+        if (/^[A-Z]\.$/.test(text.trim())) {
+            return true;
+        }
+        
+        // 检查是否为常见缩写模式
+        if (/^[A-Z]{1,5}\.$/.test(text.trim())) {
+            return true;
+        }
+        
         return false;
-    }
-
-    /**
-     * 验证是否为有效句子
-     * @param {string} sentence - 句子文本
-     * @returns {boolean}
-     */
-    isValidSentence(sentence) {
-        // 过滤过短的句子（少于3个字符）
-        if (sentence.length < 3) {
-            return false;
-        }
-
-        // 过滤只包含标点符号的句子
-        if (/^[^\w\u4e00-\u9fa5]+$/.test(sentence)) {
-            return false;
-        }
-
-        // 过滤只包含数字和符号的句子（但保留序号格式如 "1." "2." 等）
-        if (/^[\d\s\-.,()]+$/.test(sentence) && !/^\d+\.$/.test(sentence.trim())) {
-            return false;
-        }
-
-        return true;
     }
 
     /**

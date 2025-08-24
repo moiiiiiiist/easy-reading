@@ -15,8 +15,8 @@ class StorageManager {
             ARTICLES: 'english_helper_articles', // 所有文章列表
             CURRENT_ARTICLE_ID: 'english_helper_current_article_id', // 当前选中的文章ID
             READING_PROGRESS: 'english_helper_reading_progress',
-            FAVORITES: 'english_helper_favorites',
-            HIGHLIGHTED_WORDS: 'english_helper_highlighted_words',
+            FAVORITES: 'english_helper_favorites', // 所有文章的收藏句子
+            HIGHLIGHTED_WORDS: 'english_helper_highlighted_words', // 所有文章的高亮词汇
             EXPLANATIONS: 'english_helper_explanations' // 解释条数据
         };
 
@@ -30,8 +30,9 @@ class StorageManager {
     initializeDefaults() {
         // 默认单词解释提示词
         const defaultWordPrompt = `请解释这个英语单词，不超过25字。格式为：
-1. 中文含义；
-2. 词根，辅助记忆。`;
+1. 音标；
+2. 中文含义；
+3. 词根，辅助记忆。`;
 
         // 默认句子分析提示词
         const defaultSentencePrompt = `请分析这个英语句子，不超过 150字。格式为：
@@ -264,6 +265,9 @@ class StorageManager {
             this.remove(this.keys.CURRENT_ARTICLE_ID);
         }
         
+        // 删除文章相关的所有数据（收藏、高亮、解释条）
+        this.removeArticleData(articleId);
+        
         return true;
     }
 
@@ -334,27 +338,33 @@ class StorageManager {
 
     /**
      * 保存收藏的句子
+     * @param {string} articleId - 文章ID
      * @param {Array} favorites - 收藏句子列表
      */
-    saveFavorites(favorites) {
-        return this.set(this.keys.FAVORITES, favorites);
+    saveFavorites(articleId, favorites) {
+        const allFavorites = this.get(this.keys.FAVORITES) || {};
+        allFavorites[articleId] = favorites;
+        return this.set(this.keys.FAVORITES, allFavorites);
     }
 
     /**
      * 获取收藏的句子
+     * @param {string} articleId - 文章ID
      * @returns {Array} 收藏句子列表
      */
-    getFavorites() {
-        return this.get(this.keys.FAVORITES) || [];
+    getFavorites(articleId) {
+        const allFavorites = this.get(this.keys.FAVORITES) || {};
+        return allFavorites[articleId] || [];
     }
 
     /**
      * 添加收藏句子
+     * @param {string} articleId - 文章ID
      * @param {number} sentenceIndex - 句子索引
      * @param {string} sentence - 句子内容
      */
-    addFavorite(sentenceIndex, sentence) {
-        const favorites = this.getFavorites();
+    addFavorite(articleId, sentenceIndex, sentence) {
+        const favorites = this.getFavorites(articleId);
         const existing = favorites.find(f => f.index === sentenceIndex);
         
         if (!existing) {
@@ -363,7 +373,7 @@ class StorageManager {
                 sentence: sentence,
                 timestamp: Date.now()
             });
-            return this.saveFavorites(favorites);
+            return this.saveFavorites(articleId, favorites);
         }
         
         return true;
@@ -371,47 +381,55 @@ class StorageManager {
 
     /**
      * 移除收藏句子
+     * @param {string} articleId - 文章ID
      * @param {number} sentenceIndex - 句子索引
      */
-    removeFavorite(sentenceIndex) {
-        const favorites = this.getFavorites();
+    removeFavorite(articleId, sentenceIndex) {
+        const favorites = this.getFavorites(articleId);
         const filtered = favorites.filter(f => f.index !== sentenceIndex);
-        return this.saveFavorites(filtered);
+        return this.saveFavorites(articleId, filtered);
     }
 
     /**
      * 检查句子是否已收藏
+     * @param {string} articleId - 文章ID
      * @param {number} sentenceIndex - 句子索引
      * @returns {boolean}
      */
-    isFavorite(sentenceIndex) {
-        const favorites = this.getFavorites();
+    isFavorite(articleId, sentenceIndex) {
+        const favorites = this.getFavorites(articleId);
         return favorites.some(f => f.index === sentenceIndex);
     }
 
     /**
      * 保存高亮单词
+     * @param {string} articleId - 文章ID
      * @param {Array} highlightedWords - 高亮单词列表
      */
-    saveHighlightedWords(highlightedWords) {
-        return this.set(this.keys.HIGHLIGHTED_WORDS, highlightedWords);
+    saveHighlightedWords(articleId, highlightedWords) {
+        const allHighlightedWords = this.get(this.keys.HIGHLIGHTED_WORDS) || {};
+        allHighlightedWords[articleId] = highlightedWords;
+        return this.set(this.keys.HIGHLIGHTED_WORDS, allHighlightedWords);
     }
 
     /**
      * 获取高亮单词
+     * @param {string} articleId - 文章ID
      * @returns {Array} 高亮单词列表
      */
-    getHighlightedWords() {
-        return this.get(this.keys.HIGHLIGHTED_WORDS) || [];
+    getHighlightedWords(articleId) {
+        const allHighlightedWords = this.get(this.keys.HIGHLIGHTED_WORDS) || {};
+        return allHighlightedWords[articleId] || [];
     }
 
     /**
      * 添加高亮单词
+     * @param {string} articleId - 文章ID
      * @param {string} word - 单词
      * @param {number} sentenceIndex - 句子索引
      */
-    addHighlightedWord(word, sentenceIndex) {
-        const highlightedWords = this.getHighlightedWords();
+    addHighlightedWord(articleId, word, sentenceIndex) {
+        const highlightedWords = this.getHighlightedWords(articleId);
         const existing = highlightedWords.find(w => w.word === word);
         
         if (!existing) {
@@ -420,7 +438,7 @@ class StorageManager {
                 sentenceIndex: sentenceIndex,
                 timestamp: Date.now()
             });
-            return this.saveHighlightedWords(highlightedWords);
+            return this.saveHighlightedWords(articleId, highlightedWords);
         }
         
         return true;
@@ -428,21 +446,23 @@ class StorageManager {
 
     /**
      * 移除高亮单词
+     * @param {string} articleId - 文章ID
      * @param {string} word - 单词
      */
-    removeHighlightedWord(word) {
-        const highlightedWords = this.getHighlightedWords();
+    removeHighlightedWord(articleId, word) {
+        const highlightedWords = this.getHighlightedWords(articleId);
         const filtered = highlightedWords.filter(w => w.word !== word);
-        return this.saveHighlightedWords(filtered);
+        return this.saveHighlightedWords(articleId, filtered);
     }
 
     /**
      * 检查单词是否已高亮
+     * @param {string} articleId - 文章ID
      * @param {string} word - 单词
      * @returns {boolean}
      */
-    isWordHighlighted(word) {
-        const highlightedWords = this.getHighlightedWords();
+    isWordHighlighted(articleId, word) {
+        const highlightedWords = this.getHighlightedWords(articleId);
         return highlightedWords.some(w => w.word === word);
     }
 
@@ -512,5 +532,26 @@ class StorageManager {
         const allExplanations = this.get(this.keys.EXPLANATIONS) || {};
         delete allExplanations[articleId];
         return this.set(this.keys.EXPLANATIONS, allExplanations);
+    }
+
+    /**
+     * 删除指定文章的所有相关数据（收藏、高亮、解释条）
+     * @param {string} articleId - 文章ID
+     */
+    removeArticleData(articleId) {
+        // 删除收藏数据
+        const allFavorites = this.get(this.keys.FAVORITES) || {};
+        delete allFavorites[articleId];
+        this.set(this.keys.FAVORITES, allFavorites);
+
+        // 删除高亮词汇数据
+        const allHighlightedWords = this.get(this.keys.HIGHLIGHTED_WORDS) || {};
+        delete allHighlightedWords[articleId];
+        this.set(this.keys.HIGHLIGHTED_WORDS, allHighlightedWords);
+
+        // 删除解释条数据
+        this.removeExplanations(articleId);
+
+        return true;
     }
 }

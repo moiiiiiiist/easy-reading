@@ -17,6 +17,7 @@ class ReadingApp {
         
         // 应用状态
         this.currentArticle = null;
+        this.currentArticleId = null;
         this.sentences = [];
         this.currentSentenceIndex = 0;
         this.isPlaying = false;
@@ -129,6 +130,7 @@ class ReadingApp {
             return;
         }
         
+        this.currentArticleId = articleId;
         this.currentArticle = this.storage.getArticle(articleId);
         if (!this.currentArticle) {
             Utils.showToast('文章不存在，即将返回主页', 'error');
@@ -211,7 +213,7 @@ class ReadingApp {
      * @returns {string} 处理后的HTML
      */
     processSentenceText(sentence) {
-        // 将英文单词包装为span元素
+        // 将英文单词包装为span元素，保留换行符
         return sentence.replace(/\b[a-zA-Z]+\b/g, (word) => {
             return `<span class="word" data-word="${word.toLowerCase()}">${word}</span>`;
         });
@@ -298,7 +300,7 @@ class ReadingApp {
             });
             
             // 保存到存储
-            this.storage.addHighlightedWord(word, this.currentSentenceIndex);
+            this.storage.addHighlightedWord(this.currentArticleId, word, this.currentSentenceIndex);
             
             // 生成解释
             await this.generateWordExplanation(word);
@@ -320,7 +322,7 @@ class ReadingApp {
         });
         
         // 从存储中移除
-        this.storage.removeHighlightedWord(word);
+        this.storage.removeHighlightedWord(this.currentArticleId, word);
     }
 
     /**
@@ -334,7 +336,7 @@ class ReadingApp {
         });
         
         // 从存储中移除
-        this.storage.removeHighlightedWord(word);
+        this.storage.removeHighlightedWord(this.currentArticleId, word);
         
         // 移除解释
         this.removeWordExplanation(word);
@@ -636,7 +638,7 @@ class ReadingApp {
      */
     applyHighlightStates() {
         // 应用单词高亮
-        const highlightedWords = this.storage.getHighlightedWords();
+        const highlightedWords = this.storage.getHighlightedWords(this.currentArticleId);
         highlightedWords.forEach(item => {
             document.querySelectorAll(`[data-word="${item.word}"]`).forEach(el => {
                 el.classList.add('highlighted');
@@ -644,7 +646,7 @@ class ReadingApp {
         });
         
         // 应用句子收藏状态
-        const favorites = this.storage.getFavorites();
+        const favorites = this.storage.getFavorites(this.currentArticleId);
         favorites.forEach(item => {
             const sentenceElement = document.querySelector(`[data-index="${item.index}"]`);
             if (sentenceElement) {
@@ -761,14 +763,14 @@ class ReadingApp {
         if (sentenceElement.classList.contains('favorited')) {
             // 取消收藏
             sentenceElement.classList.remove('favorited');
-            this.storage.removeFavorite(this.currentSentenceIndex);
+            this.storage.removeFavorite(this.currentArticleId, this.currentSentenceIndex);
             this.removeSentenceExplanation(this.currentSentenceIndex);
             this.updateFavoriteButton(false);
         } else {
             // 添加收藏
             try {
                 sentenceElement.classList.add('favorited');
-                this.storage.addFavorite(this.currentSentenceIndex, sentence);
+                this.storage.addFavorite(this.currentArticleId, this.currentSentenceIndex, sentence);
                 await this.generateSentenceExplanation(sentence, this.currentSentenceIndex);
                 this.updateFavoriteButton(true);
             } catch (error) {
@@ -811,7 +813,7 @@ class ReadingApp {
             `${this.currentSentenceIndex + 1}/${this.sentences.length}`;
         
         // 更新收藏按钮状态
-        const isFavorited = this.storage.isFavorite(this.currentSentenceIndex);
+        const isFavorited = this.storage.isFavorite(this.currentArticleId, this.currentSentenceIndex);
         this.updateFavoriteButton(isFavorited);
         
         // 保存阅读进度

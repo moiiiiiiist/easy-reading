@@ -205,41 +205,55 @@ class AudioManager {
     }
 
     /**
-     * 使用Web Speech API创建音频
+     * 使用Web Speech API创建音频对象（不立即播放）
      * @param {string} text - 文本内容
      * @param {string} language - 语言代码
      * @returns {Promise<Audio>}
      */
     async createWebSpeechAudio(text, language = 'en') {
-        return new Promise((resolve, reject) => {
-            // 创建一个虚拟的音频对象
-            const audio = new Audio();
-            
-            // 使用Web Speech API直接播放
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = language;
-            utterance.rate = this.voiceSettings.speed;
-            
-            // 设置语音
-            const voices = speechSynthesis.getVoices();
-            const targetVoice = voices.find(voice => 
-                voice.lang.startsWith(language) || 
-                voice.lang.startsWith(language.split('-')[0])
-            );
-            if (targetVoice) {
-                utterance.voice = targetVoice;
-            }
-            
-            utterance.onend = () => {
-                resolve(audio);
-            };
-            
-            utterance.onerror = (error) => {
-                reject(error);
-            };
-            
-            speechSynthesis.speak(utterance);
-        });
+        // 创建一个模拟的音频对象，包含Web Speech API的utterance
+        const audio = new Audio();
+        
+        // 创建utterance但不立即播放
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = language;
+        utterance.rate = this.voiceSettings.speed;
+        
+        // 设置语音
+        const voices = speechSynthesis.getVoices();
+        const targetVoice = voices.find(voice => 
+            voice.lang.startsWith(language) || 
+            voice.lang.startsWith(language.split('-')[0])
+        );
+        if (targetVoice) {
+            utterance.voice = targetVoice;
+        }
+        
+        // 将utterance存储在audio对象上，供后续播放使用
+        audio.utterance = utterance;
+        audio.isWebSpeech = true;
+        
+        // 重写play方法以使用Web Speech API
+        audio.originalPlay = audio.play;
+        audio.play = () => {
+            return new Promise((resolve, reject) => {
+                utterance.onend = () => resolve();
+                utterance.onerror = (error) => reject(error);
+                speechSynthesis.speak(utterance);
+            });
+        };
+        
+        // 重写pause方法
+        audio.pause = () => {
+            speechSynthesis.cancel();
+        };
+        
+        // 重写stop方法
+        audio.stop = () => {
+            speechSynthesis.cancel();
+        };
+        
+        return audio;
     }
 
     /**
