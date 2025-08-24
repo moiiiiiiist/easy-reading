@@ -181,6 +181,23 @@ const Utils = {
     },
 
     /**
+     * 检查元素是否接近视口顶部（懒滚动检测）
+     * @param {Element} element - 要检查的元素
+     * @param {number} thresholdPercent - 距离顶部的阈值（百分比，如0.1表示10%）
+     * @returns {boolean} 如果元素接近视口顶部返回true
+     */
+    isNearViewportTop(element, thresholdPercent = 0.1) {
+        const rect = element.getBoundingClientRect();
+        const viewHeight = window.innerHeight || document.documentElement.clientHeight;
+        
+        // 将百分比转换为像素阈值
+        const threshold = viewHeight * thresholdPercent;
+        
+        // 检查元素顶部是否接近或超出视口顶部
+        return rect.top < threshold;
+    },
+
+    /**
      * 智能滚动检测 - 判断是否需要滚动（懒滚动策略）
      * @param {Element} element - 当前句子元素
      * @returns {boolean} 是否需要滚动
@@ -203,6 +220,12 @@ const Utils = {
             return true;
         }
         
+        // 如果句子接近视口顶部，需要滚动到上一页（10%阈值）
+        if (this.isNearViewportTop(element, 0.1)) {
+            console.log('[懒滚动] 句子接近视口顶部（10%区域），需要滚动');
+            return true;
+        }
+        
         console.log('[懒滚动] 句子在安全区域，不需要滚动');
         return false;
     },
@@ -220,9 +243,23 @@ const Utils = {
         
         console.log('[滚动调试] smoothScrollToSentence: 开始滚动到元素', element);
         
+        // 智能选择滚动位置
+        let blockPosition = 'start'; // 默认显示在顶部附近
+        
+        // 如果句子接近顶部，滚动到 start 位置（屏幕顶部）
+        if (this.isNearViewportTop(element, 0.1)) {
+            blockPosition = 'start';
+            console.log('[滚动调试] 句子接近顶部，滚动到屏幕顶部');
+        }
+        // 如果句子接近底部，滚动到 start 位置
+        else if (this.isNearViewportBottom(element, 0.1)) {
+            blockPosition = 'start';
+            console.log('[滚动调试] 句子接近底部，滚动到屏幕顶部');
+        }
+        
         const defaultOptions = {
             behavior: 'smooth',
-            block: 'start',      // 句子显示在顶部附近，更容易阅读
+            block: blockPosition,
             inline: 'nearest'
         };
         

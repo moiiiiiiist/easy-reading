@@ -1,20 +1,11 @@
 /**
  * 轻松阅读主页面应用
  */
-class MainApp {
+class MainApp extends BaseApp {
     constructor() {
-        // 初始化各个管理器
-        this.storage = new StorageManager();
-        this.splitter = new SentenceSplitter();
-        this.googleAPI = new GoogleAPIService();
-        this.audioManager = new AudioManager();
-        
-        // 应用状态
-        this.currentArticle = null;
-        this.currentArticleId = null;
+        super();
         
         // DOM元素缓存
-        this.elements = {};
         this.cacheElements();
         
         // 初始化应用
@@ -139,53 +130,11 @@ class MainApp {
      * @param {Event} event - 文件上传事件
      */
     async handleFileUpload(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        try {
-            Utils.setLoading(this.elements.uploadBtn, true);
-            
-            // 读取文件内容
-            const content = await Utils.readFile(file);
-            
-            // 分割句子并保留段落信息
-            const { sentences, paragraphBreaks } = this.splitter.splitIntoSentencesWithBreaks(content);
-            
-            if (sentences.length === 0) {
-                Utils.showToast('文件内容为空或格式不正确', 'error');
-                return;
-            }
-            
-            // 统计信息
-            const stats = this.splitter.getTextStats(content, sentences);
-            
-            // 创建文章数据
-            const articleData = {
-                title: file.name.replace('.txt', ''),
-                content: content,
-                sentences: sentences,
-                paragraphBreaks: paragraphBreaks,
-                stats: stats,
-                timestamp: Date.now()
-            };
-            
-            // 保存文章数据
-            const articleId = this.storage.saveArticle(articleData);
-            this.currentArticleId = articleId;
-            this.storage.setCurrentArticleId(articleId);
-            this.currentArticle = this.storage.getArticle(articleId);
-            
+        const article = await super.handleFileUpload(event, this.elements.uploadBtn);
+        if (article) {
             // 更新界面
             this.updateArticleList();
             this.updateArticlePreview();
-            
-            Utils.showToast('文章导入成功', 'success');
-            
-        } catch (error) {
-            console.error('文件上传失败:', error);
-            Utils.showToast('文件读取失败: ' + error.message, 'error');
-        } finally {
-            Utils.setLoading(this.elements.uploadBtn, false);
         }
     }
 
@@ -193,77 +142,21 @@ class MainApp {
      * 更新文章列表
      */
     updateArticleList() {
-        const articles = this.storage.getArticleList();
-        const container = this.elements.articleList;
-        
-        container.innerHTML = '';
-        
-        if (articles.length === 0) {
-            const placeholder = document.createElement('p');
-            placeholder.className = 'placeholder';
-            placeholder.textContent = '暂无文章，请先导入文章';
-            container.appendChild(placeholder);
-            return;
-        }
-        
-        articles.forEach(article => {
-            const articleItem = document.createElement('div');
-            articleItem.className = 'article-item';
-            articleItem.dataset.articleId = article.id;
-            
-            if (article.id === this.currentArticleId) {
-                articleItem.classList.add('active');
-            }
-            
-            articleItem.innerHTML = `
-                <div class="article-info">
-                    <div class="article-title">${article.title}</div>
-                    <div class="article-meta">
-                        ${this.splitter.formatStats(article.stats)} | 
-                        ${Utils.formatTime(article.createdAt)}
-                    </div>
-                </div>
-                <div class="article-actions">
-                    <button class="btn primary" onclick="mainApp.selectArticle('${article.id}')">选择</button>
-                    <button class="btn secondary" onclick="mainApp.deleteArticle('${article.id}')">删除</button>
-                </div>
-            `;
-            
-            container.appendChild(articleItem);
-        });
+        super.updateArticleList(this.elements.articleList, 'mainApp');
     }
 
-    /**
-     * 选择文章
-     * @param {string} articleId - 文章ID
-     */
-    selectArticle(articleId) {
-        this.currentArticleId = articleId;
-        this.storage.setCurrentArticleId(articleId);
-        this.currentArticle = this.storage.getArticle(articleId);
-        
+    // 重写基类方法
+    onArticleSelected() {
         this.updateArticleList();
         this.updateArticlePreview();
     }
 
-    /**
-     * 删除文章
-     * @param {string} articleId - 文章ID
-     */
-    deleteArticle(articleId) {
-        if (confirm('确定要删除这篇文章吗？')) {
-            this.storage.deleteArticle(articleId);
-            
-            // 如果删除的是当前文章，清空预览
-            if (articleId === this.currentArticleId) {
-                this.currentArticleId = null;
-                this.currentArticle = null;
-                this.clearArticlePreview();
-            }
-            
-            this.updateArticleList();
-            Utils.showToast('文章已删除', 'success');
-        }
+    onArticleCleared() {
+        this.clearArticlePreview();
+    }
+
+    onArticleDeleted() {
+        this.updateArticleList();
     }
 
     /**
@@ -615,10 +508,7 @@ class MainApp {
      * 加载当前文章
      */
     loadCurrentArticle() {
-        this.currentArticleId = this.storage.getCurrentArticleId();
-        if (this.currentArticleId) {
-            this.currentArticle = this.storage.getArticle(this.currentArticleId);
-        }
+        super.loadCurrentArticle();
         
         this.updateArticleList();
         if (this.currentArticle) {

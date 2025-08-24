@@ -1,30 +1,18 @@
 /**
  * 轻松阅读阅读页面应用
  */
-class ReadingApp {
+class ReadingApp extends BaseApp {
     constructor() {
-        // 初始化各个管理器
-        this.storage = new StorageManager();
-        this.splitter = new SentenceSplitter();
-        this.googleAPI = new GoogleAPIService();
-        this.audioManager = new AudioManager();
-        
-        // 设置音频管理器的Google API引用
-        this.audioManager.setGoogleAPIService(this.googleAPI);
+        super();
         
         // 配置 Markdown 解析器
         this.configureMarkdown();
         
-        // 应用状态
-        this.currentArticle = null;
-        this.currentArticleId = null;
+        // 阅读特有状态
         this.sentences = [];
         this.currentSentenceIndex = 0;
-        this.isPlaying = false;
-        this.explanations = new Map(); // 存储解释内容
         
         // DOM元素缓存
-        this.elements = {};
         this.cacheElements();
         
         // 初始化应用
@@ -481,49 +469,7 @@ class ReadingApp {
         }
     }
 
-    /**
-     * 播放单词发音
-     * @param {string} word - 单词
-     * @param {boolean} silent - 是否静默播放（不显示提示）
-     */
-    async playWordPronunciation(word, silent = false) {
-        const btn = document.querySelector(`[data-word="${word}"].pronunciation-btn`);
-        try {
-            if (btn) {
-                btn.classList.add('playing');
-                btn.disabled = true;
-            }
-            
-            const language = this.audioManager.detectLanguage(word);
-            
-            // 只在非静默模式下显示播放状态
-            if (!silent) {
-                Utils.showToast(`正在播放: ${word}`, 'info', 1000);
-            }
-            
-            await this.audioManager.play(word, language);
-            
-        } catch (error) {
-            console.error('播放单词发音失败:', error);
-            
-            // 只在非静默模式下显示错误提示
-            if (!silent) {
-                // 根据错误类型显示不同提示
-                if (error.message.includes('不支持语音合成')) {
-                    Utils.showToast('您的浏览器不支持语音合成功能', 'error');
-                } else if (error.message.includes('语音合成失败')) {
-                    Utils.showToast('语音播放失败，请检查系统音量设置', 'error');
-                } else {
-                    Utils.showToast('发音播放失败，请稍后再试', 'error');
-                }
-            }
-        } finally {
-            if (btn) {
-                btn.classList.remove('playing');
-                btn.disabled = false;
-            }
-        }
-    }
+    // 使用基类的 playWordPronunciation 方法
 
     /**
      * 移除单词解释
@@ -869,29 +815,7 @@ class ReadingApp {
      * 预加载音频
      */
     async preloadAudio() {
-        try {
-            // 检查系统TTS支持
-            if (!this.audioManager.systemTTSSupported) {
-                console.warn('系统不支持TTS，跳过音频预加载');
-                return;
-            }
-            
-            console.log('开始语音系统预检查...');
-            
-            await this.audioManager.batchPreload(this.sentences, (completed, total) => {
-                console.log(`语音系统预检查进度: ${completed}/${total}`);
-            });
-            
-            console.log('语音系统预检查完成');
-            
-            // 显示可用语音信息
-            const voiceInfo = this.audioManager.getVoiceInfo();
-            console.log('可用语音:', voiceInfo.availableVoices.length, '个');
-            console.log('支持语言:', voiceInfo.supportedLanguages);
-            
-        } catch (error) {
-            console.error('语音系统预检查失败:', error);
-        }
+        await super.preloadAudio(this.sentences);
     }
 
     /**
@@ -983,80 +907,13 @@ class ReadingApp {
      * 初始化分隔条拖拽
      */
     initResizer() {
-        const resizer = this.elements.resizer;
-        const leftPanel = this.elements.explanationPanel;
-        const rightPanel = this.elements.readingPanel;
         const container = document.querySelector('.reading-container');
-        
-        let isResizing = false;
-        
-        // 桌面端鼠标事件
-        resizer.addEventListener('mousedown', startResize);
-        
-        // 移动端触摸事件
-        resizer.addEventListener('touchstart', startResizeTouch, { passive: false });
-        
-        function startResize(e) {
-            isResizing = true;
-            document.addEventListener('mousemove', handleResize);
-            document.addEventListener('mouseup', stopResize);
-            e.preventDefault();
-        }
-        
-        function startResizeTouch(e) {
-            isResizing = true;
-            document.addEventListener('touchmove', handleResizeTouch, { passive: false });
-            document.addEventListener('touchend', stopResize);
-            e.preventDefault();
-        }
-        
-        function handleResize(e) {
-            if (!isResizing) return;
-            
-            const containerRect = container.getBoundingClientRect();
-            const containerWidth = containerRect.width;
-            const mouseX = e.clientX - containerRect.left;
-            
-            const leftWidth = (mouseX / containerWidth) * 100;
-            const rightWidth = 100 - leftWidth;
-            
-            // 限制最小宽度
-            if (leftWidth < 20 || rightWidth < 20) return;
-            
-            leftPanel.style.width = leftWidth + '%';
-            rightPanel.style.width = rightWidth + '%';
-        }
-        
-        function handleResizeTouch(e) {
-            if (!isResizing) return;
-            
-            const touchY = e.touches[0].clientY;
-            const viewportHeight = window.innerHeight;
-            
-            // 计算解释区高度（vh单位）
-            const explanationHeightVh = (touchY / viewportHeight) * 100;
-            
-            // 限制最小高度（20vh 到 80vh）
-            if (explanationHeightVh < 20 || explanationHeightVh > 80) return;
-            
-            // 更新CSS样式
-            leftPanel.style.height = explanationHeightVh + 'vh';
-            leftPanel.style.top = '0';
-            
-            rightPanel.style.top = explanationHeightVh + 'vh';
-            rightPanel.style.height = (100 - explanationHeightVh - 8) + 'vh'; // 减去控制栏高度
-            
-            // 移动resizer位置
-            resizer.style.top = explanationHeightVh + 'vh';
-        }
-        
-        function stopResize() {
-            isResizing = false;
-            document.removeEventListener('mousemove', handleResize);
-            document.removeEventListener('mouseup', stopResize);
-            document.removeEventListener('touchmove', handleResizeTouch);
-            document.removeEventListener('touchend', stopResize);
-        }
+        super.initResizer(
+            this.elements.resizer,
+            this.elements.explanationPanel,
+            this.elements.readingPanel,
+            container
+        );
     }
 
     /**
@@ -1102,22 +959,7 @@ class ReadingApp {
      */
     adjustMobileLayout() {
         const container = document.querySelector('.reading-container');
-        const explanationPanel = this.elements.explanationPanel;
-        const readingPanel = this.elements.readingPanel;
-        
-        if (Utils.isMobile()) {
-            container.style.flexDirection = 'column';
-            explanationPanel.style.width = '100%';
-            explanationPanel.style.height = '40%';
-            readingPanel.style.width = '100%';
-            readingPanel.style.height = '60%';
-        } else {
-            container.style.flexDirection = 'row';
-            explanationPanel.style.width = '40%';
-            explanationPanel.style.height = '100%';
-            readingPanel.style.width = '60%';
-            readingPanel.style.height = '100%';
-        }
+        super.adjustMobileLayout(container, this.elements.explanationPanel, this.elements.readingPanel);
     }
 
     /**
