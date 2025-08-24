@@ -675,7 +675,7 @@ class ReadingApp {
         }
     }
 
-    async playCurrentSentence() {
+    async playCurrentSentence(forceScroll = false) {
         if (this.currentSentenceIndex >= this.sentences.length) return;
         
         try {
@@ -684,7 +684,7 @@ class ReadingApp {
             
             this.isPlaying = true;
             this.updatePlayButton();
-            this.updateCurrentSentence();
+            this.updateCurrentSentence(forceScroll);
             
             // 检查系统TTS支持
             if (!this.audioManager.systemTTSSupported) {
@@ -751,14 +751,14 @@ class ReadingApp {
     async previousSentence() {
         if (this.currentSentenceIndex > 0) {
             this.currentSentenceIndex--;
-            await this.playCurrentSentence();
+            await this.playCurrentSentence(); // 使用懒滚动
         }
     }
 
     async nextSentence() {
         if (this.currentSentenceIndex < this.sentences.length - 1) {
             this.currentSentenceIndex++;
-            await this.playCurrentSentence();
+            await this.playCurrentSentence(); // 使用懒滚动
         }
     }
 
@@ -792,9 +792,12 @@ class ReadingApp {
 
     /**
      * 更新当前句子状态
+     * @param {boolean} forceScroll - 是否强制滚动到当前句子
      */
-    updateCurrentSentence() {
-        // 移除所有current类
+    updateCurrentSentence(forceScroll = false) {
+        console.log(`[滚动调试] updateCurrentSentence 被调用，forceScroll=${forceScroll}, currentIndex=${this.currentSentenceIndex}`);
+        
+        // 移除之前的current类
         document.querySelectorAll('.sentence.current').forEach(el => {
             el.classList.remove('current');
         });
@@ -804,10 +807,18 @@ class ReadingApp {
         if (currentElement) {
             currentElement.classList.add('current');
             
-            // 朗读时使用更积极的滚动策略
-            if (!Utils.isInReadingViewport(currentElement)) {
-                Utils.smoothScrollToReading(currentElement);
+            // 使用懒滚动策略：只在必要时滚动
+            if (forceScroll) {
+                console.log(`[懒滚动] 强制滚动模式`);
+                Utils.smoothScrollToSentence(currentElement);
+            } else if (Utils.needsLazyScroll(currentElement)) {
+                console.log(`[懒滚动] 触发懒滚动 - 句子接近边界`);
+                Utils.smoothScrollToSentence(currentElement);
+            } else {
+                console.log(`[懒滚动] 跳过滚动 - 句子在安全区域`);
             }
+        } else {
+            console.log(`[滚动调试] 未找到当前句子元素，索引: ${this.currentSentenceIndex}`);
         }
         
         this.updateReadingInterface();

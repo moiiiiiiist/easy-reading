@@ -143,60 +143,96 @@ const Utils = {
     },
 
     /**
-     * 检查元素是否在视口中
+     * 检查元素是否在视口中（考虑固定头部和底部）
      * @param {Element} element - 要检查的元素
+     * @param {number} offset - 额外偏移量（默认100px，为固定头部/底部留空间）
      * @returns {boolean}
      */
-    isInViewport(element) {
+    isInViewport(element, offset = 100) {
         const rect = element.getBoundingClientRect();
+        const viewHeight = window.innerHeight || document.documentElement.clientHeight;
+        const viewWidth = window.innerWidth || document.documentElement.clientWidth;
+        
         return (
-            rect.top >= 0 &&
+            rect.top >= offset &&
             rect.left >= 0 &&
-            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
-            rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+            rect.bottom <= (viewHeight - offset) &&
+            rect.right <= viewWidth &&
+            rect.height > 0 && // 确保元素有高度
+            rect.width > 0    // 确保元素有宽度
         );
     },
 
     /**
-     * 检查元素是否在视口的舒适阅读区域内（用于朗读滚动）
+     * 检查元素是否接近视口底部（懒滚动检测）
      * @param {Element} element - 要检查的元素
-     * @returns {boolean}
+     * @param {number} thresholdPercent - 距离底部的阈值（百分比，如0.1表示10%）
+     * @returns {boolean} 如果元素接近视口底部返回true
      */
-    isInReadingViewport(element) {
+    isNearViewportBottom(element, thresholdPercent = 0.1) {
         const rect = element.getBoundingClientRect();
-        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        const viewHeight = window.innerHeight || document.documentElement.clientHeight;
         
-        // 舒适阅读区域：距离顶部10%到距离底部30%的区域
-        const comfortTop = viewportHeight * 0.1;
-        const comfortBottom = viewportHeight * 0.7;
+        // 将百分比转换为像素阈值
+        const threshold = viewHeight * thresholdPercent;
         
-        return (
-            rect.top >= comfortTop &&
-            rect.bottom <= comfortBottom &&
-            rect.left >= 0 &&
-            rect.right <= (window.innerWidth || document.documentElement.clientWidth)
-        );
+        // 检查元素底部是否接近或超出视口底部
+        return rect.bottom > (viewHeight - threshold);
     },
 
     /**
-     * 朗读专用滚动：将元素滚动到屏幕80%位置
+     * 智能滚动检测 - 判断是否需要滚动（懒滚动策略）
+     * @param {Element} element - 当前句子元素
+     * @returns {boolean} 是否需要滚动
+     */
+    needsLazyScroll(element) {
+        if (!element) return false;
+        
+        const rect = element.getBoundingClientRect();
+        const viewHeight = window.innerHeight || document.documentElement.clientHeight;
+        
+        // 如果句子完全不在视口中，需要滚动
+        if (rect.bottom <= 0 || rect.top >= viewHeight) {
+            console.log('[懒滚动] 句子不在视口中，需要滚动');
+            return true;
+        }
+        
+        // 如果句子接近视口底部，需要滚动到下一页（10%阈值）
+        if (this.isNearViewportBottom(element, 0.1)) {
+            console.log('[懒滚动] 句子接近视口底部（10%区域），需要滚动');
+            return true;
+        }
+        
+        console.log('[懒滚动] 句子在安全区域，不需要滚动');
+        return false;
+    },
+
+    /**
+     * 改进的平滑滚动到元素（专为阅读句子优化）
      * @param {Element} element - 目标元素
+     * @param {Object} options - 滚动选项
      */
-    smoothScrollToReading(element) {
-        if (!element) return;
+    smoothScrollToSentence(element, options = {}) {
+        if (!element) {
+            console.log('[滚动调试] smoothScrollToSentence: 元素为空');
+            return;
+        }
         
-        const elementRect = element.getBoundingClientRect();
-        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        console.log('[滚动调试] smoothScrollToSentence: 开始滚动到元素', element);
         
-        // 计算需要滚动的距离，让元素位于屏幕80%的位置
-        const targetPosition = viewportHeight * 0.8;
-        const currentPosition = elementRect.top;
-        const scrollDistance = currentPosition - targetPosition;
+        const defaultOptions = {
+            behavior: 'smooth',
+            block: 'start',      // 句子显示在顶部附近，更容易阅读
+            inline: 'nearest'
+        };
         
-        // 平滑滚动
-        window.scrollBy({
-            top: scrollDistance,
-            behavior: 'smooth'
+        const finalOptions = { ...defaultOptions, ...options };
+        console.log('[滚动调试] 滚动选项:', finalOptions);
+        
+        // 使用 requestAnimationFrame 确保 DOM 更新完成后再滚动
+        requestAnimationFrame(() => {
+            console.log('[滚动调试] 执行 scrollIntoView');
+            element.scrollIntoView(finalOptions);
         });
     },
 
