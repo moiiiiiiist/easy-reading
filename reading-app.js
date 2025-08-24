@@ -262,10 +262,10 @@ class ReadingApp {
         });
         
         // 为已高亮单词添加单击事件
-        element.addEventListener('click', (e) => {
+        element.addEventListener('click', async (e) => {
             if (e.target.classList.contains('word') && e.target.classList.contains('highlighted')) {
                 e.stopPropagation();
-                this.scrollToWordExplanation(e.target.dataset.word);
+                await this.scrollToWordExplanation(e.target.dataset.word);
             }
         });
     }
@@ -278,8 +278,8 @@ class ReadingApp {
         const word = wordElement.dataset.word;
         
         if (wordElement.classList.contains('highlighted')) {
-            // 取消高亮
-            this.removeWordHighlight(word);
+            // 取消高亮并删除解释条
+            this.removeWordHighlightAndExplanation(word);
         } else {
             // 添加高亮
             await this.addWordHighlight(word);
@@ -582,11 +582,19 @@ class ReadingApp {
      * 滚动到单词解释
      * @param {string} word - 单词
      */
-    scrollToWordExplanation(word) {
+    async scrollToWordExplanation(word) {
         const element = document.querySelector(`[data-type="word"][data-key="${word}"]`);
         if (element) {
             element.classList.add('highlighted');
             Utils.smoothScrollTo(element);
+            
+            // 播放词汇音频一次
+            try {
+                await this.playWordPronunciation(word, true); // true表示静默播放，不显示提示
+            } catch (error) {
+                console.warn('播放词汇音频失败:', error);
+                // 静默处理错误，不影响滚动功能
+            }
             
             // 移除高亮效果
             setTimeout(() => {

@@ -484,10 +484,10 @@ class EnglishHelper {
         });
         
         // 为已高亮单词添加单击事件
-        element.addEventListener('click', (e) => {
+        element.addEventListener('click', async (e) => {
             if (e.target.classList.contains('word') && e.target.classList.contains('highlighted')) {
                 e.stopPropagation();
-                this.scrollToWordExplanation(e.target.dataset.word);
+                await this.scrollToWordExplanation(e.target.dataset.word);
             }
         });
     }
@@ -500,7 +500,7 @@ class EnglishHelper {
         const word = wordElement.dataset.word;
         
         if (wordElement.classList.contains('highlighted')) {
-            // 取消高亮
+            // 取消高亮并删除解释条
             this.removeWordHighlight(word);
         } else {
             // 添加高亮
@@ -705,11 +705,19 @@ class EnglishHelper {
      * 滚动到单词解释
      * @param {string} word - 单词
      */
-    scrollToWordExplanation(word) {
+    async scrollToWordExplanation(word) {
         const element = document.querySelector(`[data-type="word"][data-key="${word}"]`);
         if (element) {
             element.classList.add('highlighted');
             Utils.smoothScrollTo(element);
+            
+            // 播放词汇音频一次
+            try {
+                await this.playWordPronunciation(word, true); // true表示静默播放，不显示提示
+            } catch (error) {
+                console.warn('播放词汇音频失败:', error);
+                // 静默处理错误，不影响滚动功能
+            }
             
             // 移除高亮效果
             setTimeout(() => {
@@ -888,6 +896,50 @@ class EnglishHelper {
      */
     updateFavoriteButton(isFavorited) {
         this.elements.favoriteBtn.textContent = isFavorited ? '♥' : '♡';
+    }
+
+    /**
+     * 播放单词发音
+     * @param {string} word - 单词
+     * @param {boolean} silent - 是否静默播放（不显示提示）
+     */
+    async playWordPronunciation(word, silent = false) {
+        const btn = document.querySelector(`[data-word="${word}"].pronunciation-btn`);
+        try {
+            if (btn) {
+                btn.classList.add('playing');
+                btn.disabled = true;
+            }
+            
+            const language = this.audioManager.detectLanguage(word);
+            
+            // 只在非静默模式下显示播放状态
+            if (!silent) {
+                Utils.showToast(`正在播放: ${word}`, 'info', 1000);
+            }
+            
+            await this.audioManager.play(word, language);
+            
+        } catch (error) {
+            console.error('播放单词发音失败:', error);
+            
+            // 只在非静默模式下显示错误提示
+            if (!silent) {
+                // 根据错误类型显示不同提示
+                if (error.message.includes('不支持语音合成')) {
+                    Utils.showToast('您的浏览器不支持语音合成功能', 'error');
+                } else if (error.message.includes('语音合成失败')) {
+                    Utils.showToast('语音播放失败，请检查系统音量设置', 'error');
+                } else {
+                    Utils.showToast('发音播放失败，请稍后再试', 'error');
+                }
+            }
+        } finally {
+            if (btn) {
+                btn.classList.remove('playing');
+                btn.disabled = false;
+            }
+        }
     }
 
     /**
