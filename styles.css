@@ -742,7 +742,7 @@ nav {
 
 .reading-content {
     flex: 1;
-    padding: 2rem;
+    padding: 1rem; /* 左右留白减少一半：从2rem减少到1rem */
     padding-bottom: 100px; /* 为固定控制栏留出更多空间 */
     overflow-y: auto;
     line-height: 2;
@@ -922,6 +922,7 @@ nav {
     /* 手机端阅读内容调整 */
     .reading-content {
         height: calc(60vh - 60px);
+        padding: 1rem; /* 与桌面端保持一致，减少一半留白 */
         padding-bottom: 80px; /* 减少底部内边距 */
         overflow-y: auto;
     }
