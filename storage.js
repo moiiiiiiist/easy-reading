@@ -322,18 +322,23 @@ class StorageManager {
 
     /**
      * 保存阅读进度
+     * @param {string} articleId - 文章ID
      * @param {Object} progress - 进度信息
      */
-    saveReadingProgress(progress) {
-        return this.set(this.keys.READING_PROGRESS, progress);
+    saveReadingProgress(articleId, progress) {
+        const allProgress = this.get(this.keys.READING_PROGRESS) || {};
+        allProgress[articleId] = progress;
+        return this.set(this.keys.READING_PROGRESS, allProgress);
     }
 
     /**
      * 获取阅读进度
+     * @param {string} articleId - 文章ID
      * @returns {Object|null} 进度信息
      */
-    getReadingProgress() {
-        return this.get(this.keys.READING_PROGRESS);
+    getReadingProgress(articleId) {
+        const allProgress = this.get(this.keys.READING_PROGRESS) || {};
+        return allProgress[articleId] || null;
     }
 
     /**
@@ -551,6 +556,11 @@ class StorageManager {
 
         // 删除解释条数据
         this.removeExplanations(articleId);
+
+        // 删除阅读进度数据
+        const allProgress = this.get(this.keys.READING_PROGRESS) || {};
+        delete allProgress[articleId];
+        this.set(this.keys.READING_PROGRESS, allProgress);
 
         return true;
     }

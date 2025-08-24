@@ -158,6 +158,49 @@ const Utils = {
     },
 
     /**
+     * 检查元素是否在视口的舒适阅读区域内（用于朗读滚动）
+     * @param {Element} element - 要检查的元素
+     * @returns {boolean}
+     */
+    isInReadingViewport(element) {
+        const rect = element.getBoundingClientRect();
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        
+        // 舒适阅读区域：距离顶部10%到距离底部30%的区域
+        const comfortTop = viewportHeight * 0.1;
+        const comfortBottom = viewportHeight * 0.7;
+        
+        return (
+            rect.top >= comfortTop &&
+            rect.bottom <= comfortBottom &&
+            rect.left >= 0 &&
+            rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+        );
+    },
+
+    /**
+     * 朗读专用滚动：将元素滚动到屏幕80%位置
+     * @param {Element} element - 目标元素
+     */
+    smoothScrollToReading(element) {
+        if (!element) return;
+        
+        const elementRect = element.getBoundingClientRect();
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        
+        // 计算需要滚动的距离，让元素位于屏幕80%的位置
+        const targetPosition = viewportHeight * 0.8;
+        const currentPosition = elementRect.top;
+        const scrollDistance = currentPosition - targetPosition;
+        
+        // 平滑滚动
+        window.scrollBy({
+            top: scrollDistance,
+            behavior: 'smooth'
+        });
+    },
+
+    /**
      * 显示提示消息
      * @param {string} message - 消息内容
      * @param {string} type - 消息类型 (success, error, warning, info)

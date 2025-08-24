@@ -145,8 +145,14 @@ class ReadingApp {
         // 加载保存的解释条数据
         this.loadExplanations();
         
+        // 加载阅读状态
+        this.loadReadingState();
+        
         // 初始化阅读界面
         this.initReadingInterface();
+        
+        // 高亮当前句子
+        this.updateCurrentSentence();
         
         // 预加载音频（后台进行）
         this.preloadAudio();
@@ -534,7 +540,7 @@ class ReadingApp {
         document.querySelectorAll(`[data-word="${word}"]`).forEach(el => {
             el.classList.remove('highlighted');
         });
-        this.storage.removeHighlightedWord(word);
+        this.storage.removeHighlightedWord(this.currentArticleId, word);
         
         // 保存到localStorage
         this.saveExplanations();
@@ -559,6 +565,9 @@ class ReadingApp {
         if (sentenceElement) {
             sentenceElement.classList.remove('favorited');
         }
+        
+        // 从存储中移除收藏状态
+        this.storage.removeFavorite(this.currentArticleId, index);
         
         // 保存到localStorage
         this.saveExplanations();
@@ -795,9 +804,9 @@ class ReadingApp {
         if (currentElement) {
             currentElement.classList.add('current');
             
-            // 滚动到当前句子
-            if (!Utils.isInViewport(currentElement)) {
-                Utils.smoothScrollTo(currentElement);
+            // 朗读时使用更积极的滚动策略
+            if (!Utils.isInReadingViewport(currentElement)) {
+                Utils.smoothScrollToReading(currentElement);
             }
         }
         
@@ -886,9 +895,12 @@ class ReadingApp {
      * 加载阅读状态
      */
     loadReadingState() {
-        const progress = this.storage.getReadingProgress();
+        const progress = this.storage.getReadingProgress(this.currentArticleId);
         if (progress && progress.sentenceIndex !== undefined) {
             this.currentSentenceIndex = progress.sentenceIndex;
+        } else {
+            // 新文章默认从第0句开始
+            this.currentSentenceIndex = 0;
         }
     }
 
@@ -953,7 +965,7 @@ class ReadingApp {
             sentenceIndex: this.currentSentenceIndex,
             timestamp: Date.now()
         };
-        this.storage.saveReadingProgress(progress);
+        this.storage.saveReadingProgress(this.currentArticleId, progress);
     }
 
     /**
