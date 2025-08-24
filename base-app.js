@@ -279,8 +279,8 @@ class BaseApp {
             const leftWidth = (mouseX / containerWidth) * 100;
             const rightWidth = 100 - leftWidth;
             
-            // 限制最小宽度
-            if (leftWidth < 20 || rightWidth < 20) return;
+            // 限制最小宽度 - 允许拉到99%，最小宽度1%
+            if (leftWidth < 1 || rightWidth < 1) return;
             
             leftPanel.style.width = leftWidth + '%';
             rightPanel.style.width = rightWidth + '%';
@@ -292,11 +292,11 @@ class BaseApp {
             const touchY = e.touches[0].clientY;
             const viewportHeight = window.innerHeight;
             
-            // 计算解释区高度（vh单位）
+            // 计算解释区高度（vh单位）- 触摸点即为分割线位置
             const explanationHeightVh = (touchY / viewportHeight) * 100;
             
-            // 限制最小高度（20vh 到 80vh）
-            if (explanationHeightVh < 20 || explanationHeightVh > 80) return;
+            // 限制最小高度 - 允许拉到99%，最小高度1vh
+            if (explanationHeightVh < 1 || explanationHeightVh > 99) return;
             
             // 更新CSS样式
             leftPanel.style.height = explanationHeightVh + 'vh';

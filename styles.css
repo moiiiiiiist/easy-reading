@@ -358,15 +358,15 @@ nav {
 /* 侧边返回按钮 */
 .back-btn {
     position: absolute;
-    bottom: 20px;
-    left: 20px;
-    width: 50px;
-    height: 50px;
+    top: 3px; /* 更贴近顶部边缘 */
+    left: 3px; /* 更贴近左侧边缘 */
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background: rgba(52, 152, 219, 0.1);
     color: rgba(52, 152, 219, 0.8);
     border: none;
-    font-size: 18px;
+    font-size: 16px;
     cursor: pointer;
     z-index: 1000;
     transition: all 0.3s;
@@ -417,32 +417,37 @@ nav {
 
 .explanation-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: center; /* 居中对齐 */
     align-items: center;
-    padding: 1rem;
+    padding: 0.7rem; /* 从1rem缩减到0.7rem (70%) */
     background: #f8f9fa;
     border-bottom: 1px solid #ddd;
     flex-shrink: 0; /* 标题不缩放 */
+    position: relative; /* 为绝对定位的按钮提供参考 */
 }
 
 .explanation-header h3 {
     margin: 0;
     color: #2c3e50;
-    font-size: 1.2rem;
+    font-size: 0.84rem; /* 从1.2rem缩减到0.84rem (70%) */
 }
 
 .font-size-controls {
     display: flex;
     gap: 0.5rem;
+    position: absolute;
+    right: 0.7rem; /* 与padding保持一致 */
+    top: 50%;
+    transform: translateY(-50%); /* 垂直居中 */
 }
 
 .font-size-btn {
     background: #3498db;
     color: white;
     border: none;
-    border-radius: 4px;
-    padding: 0.3rem 0.6rem;
-    font-size: 0.9rem;
+    border-radius: 3px; /* 从4px缩减到3px (75%) */
+    padding: 0.21rem 0.42rem; /* 从0.3rem 0.6rem缩减到0.21rem 0.42rem (70%) */
+    font-size: 0.63rem; /* 从0.9rem缩减到0.63rem (70%) */
     cursor: pointer;
     transition: all 0.3s;
     font-weight: bold;
@@ -927,18 +932,18 @@ nav {
         overflow-y: auto;
     }
     
-    /* 手机端返回按钮调整 - 固定在解释区左下角 */
+    /* 手机端返回按钮调整 - 固定在解释区左上角 */
     .back-btn {
         position: fixed;
-        bottom: 1%; /* 使用百分比，位于解释区底部 */
-        left: 20px;
-        width: 50px;
-        height: 50px;
+        top: 3px; /* 更贴近顶部边缘 */
+        left: 3px; /* 更贴近左侧边缘 */
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
         background: rgba(52, 152, 219, 0.1);
         color: rgba(52, 152, 219, 0.8);
         border: none;
-        font-size: 18px;
+        font-size: 16px;
         cursor: pointer;
         z-index: 1001; /* 确保在解释区之上 */
         transition: all 0.3s;
