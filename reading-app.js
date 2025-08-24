@@ -12,6 +12,15 @@ class ReadingApp extends BaseApp {
         this.sentences = [];
         this.currentSentenceIndex = 0;
         
+        // 播放模式状态
+        this.playModes = [
+            { key: 'current', label: '播放当前句', icon: '⏹' },
+            { key: 'all', label: '播放全文', icon: '⏵' },
+            { key: 'loopCurrent', label: '循环当前句', icon: '🔂' },
+            { key: 'loopAll', label: '循环全文', icon: '🔁' }
+        ];
+        this.currentPlayModeIndex = 0; // 默认为播放当前句
+        
         // DOM元素缓存
         this.cacheElements();
         
@@ -42,6 +51,7 @@ class ReadingApp extends BaseApp {
             explanationContent: document.getElementById('explanationContent'),
             resizer: document.getElementById('resizer'),
             readingContent: document.getElementById('readingContent'),
+            playModeBtn: document.getElementById('playModeBtn'),
             playPauseBtn: document.getElementById('playPauseBtn'),
             prevBtn: document.getElementById('prevBtn'),
             nextBtn: document.getElementById('nextBtn'),
@@ -75,6 +85,7 @@ class ReadingApp extends BaseApp {
         this.elements.backBtn.addEventListener('click', () => this.goBack());
         
         // 播放控制事件
+        this.elements.playModeBtn.addEventListener('click', () => this.togglePlayMode());
         this.elements.playPauseBtn.addEventListener('click', () => this.togglePlay());
         this.elements.prevBtn.addEventListener('click', () => this.previousSentence());
         this.elements.nextBtn.addEventListener('click', () => this.nextSentence());
@@ -135,6 +146,9 @@ class ReadingApp extends BaseApp {
         
         // 加载阅读状态
         this.loadReadingState();
+        
+        // 加载播放模式设置
+        this.loadPlayModeSettings();
         
         // 初始化阅读界面
         this.initReadingInterface();
@@ -644,6 +658,10 @@ class ReadingApp extends BaseApp {
             
             this.isPlaying = false;
             this.updatePlayButton();
+            
+            // 播放完成后根据播放模式决定下一步动作
+            await this.handlePlayModeAfterSentence();
+            
         } catch (error) {
             console.error('播放失败:', error);
             
@@ -696,6 +714,8 @@ class ReadingApp extends BaseApp {
 
     async previousSentence() {
         if (this.currentSentenceIndex > 0) {
+            // 停止当前播放
+            this.stopPlaying();
             this.currentSentenceIndex--;
             await this.playCurrentSentence(); // 使用懒滚动
         }
@@ -703,6 +723,8 @@ class ReadingApp extends BaseApp {
 
     async nextSentence() {
         if (this.currentSentenceIndex < this.sentences.length - 1) {
+            // 停止当前播放
+            this.stopPlaying();
             this.currentSentenceIndex++;
             await this.playCurrentSentence(); // 使用懒滚动
         }
@@ -1010,19 +1032,104 @@ class ReadingApp extends BaseApp {
         });
         
         // 保存到本地存储
-        this.storage.setItem('explanationFontSize', size.toString());
+        this.storage.set('explanationFontSize', size.toString());
     }
 
     /**
      * 加载字体设置
      */
     loadFontSettings() {
-        const savedSize = this.storage.getItem('explanationFontSize');
+        const savedSize = this.storage.get('explanationFontSize');
         if (savedSize) {
             const size = parseFloat(savedSize);
             if (size >= 0.8 && size <= 1.5) {
                 this.setFontSize(size);
             }
+        }
+    }
+
+    /**
+     * 切换播放模式
+     */
+    togglePlayMode() {
+        this.currentPlayModeIndex = (this.currentPlayModeIndex + 1) % this.playModes.length;
+        this.updatePlayModeButton();
+        this.savePlayModeSettings();
+    }
+
+    /**
+     * 更新播放模式按钮显示
+     */
+    updatePlayModeButton() {
+        const currentMode = this.playModes[this.currentPlayModeIndex];
+        this.elements.playModeBtn.textContent = currentMode.icon;
+        this.elements.playModeBtn.title = `播放模式：${currentMode.label}`;
+    }
+
+    /**
+     * 获取当前播放模式
+     */
+    getCurrentPlayMode() {
+        return this.playModes[this.currentPlayModeIndex];
+    }
+
+    /**
+     * 加载播放模式设置
+     */
+    loadPlayModeSettings() {
+        const savedModeIndex = this.storage.get('playModeIndex');
+        if (savedModeIndex !== null) {
+            const index = parseInt(savedModeIndex);
+            if (index >= 0 && index < this.playModes.length) {
+                this.currentPlayModeIndex = index;
+            }
+        }
+        this.updatePlayModeButton();
+    }
+
+    /**
+     * 保存播放模式设置
+     */
+    savePlayModeSettings() {
+        this.storage.set('playModeIndex', this.currentPlayModeIndex.toString());
+    }
+
+    /**
+     * 处理播放模式逻辑（在单个句子播放完成后）
+     */
+    async handlePlayModeAfterSentence() {
+        const currentMode = this.getCurrentPlayMode();
+        
+        switch (currentMode.key) {
+            case 'current':
+                // 播放当前句：播放完成后停止
+                break;
+                
+            case 'all':
+                // 播放全文：继续播放下一句，直到文章结束
+                if (this.currentSentenceIndex < this.sentences.length - 1) {
+                    this.currentSentenceIndex++;
+                    await this.playCurrentSentence();
+                }
+                break;
+                
+            case 'loopCurrent':
+                // 循环当前句：重复播放当前句子
+                await this.playCurrentSentence();
+                break;
+                
+            case 'loopAll':
+                // 循环全文：播放下一句，到文章结束后重新开始
+                if (this.currentSentenceIndex < this.sentences.length - 1) {
+                    this.currentSentenceIndex++;
+                } else {
+                    this.currentSentenceIndex = 0; // 重新开始
+                }
+                await this.playCurrentSentence();
+                break;
+                
+            default:
+                break;
         }
     }
 }
