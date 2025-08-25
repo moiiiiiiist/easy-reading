@@ -8,6 +8,9 @@ class MainApp extends BaseApp {
         // DOM元素缓存
         this.cacheElements();
         
+        // 初始化时间统计
+        this.initTimeTracking();
+        
         // 初始化应用
         this.init();
     }
@@ -107,6 +110,23 @@ class MainApp extends BaseApp {
         this.elements.fontSize.addEventListener('input', (e) => {
             this.elements.fontSizeValue.textContent = e.target.value + 'px';
         });
+    }
+
+    /**
+     * 初始化时间统计功能
+     */
+    initTimeTracking() {
+        try {
+            // 创建时间追踪器
+            this.timeTracker = new TimeTracker();
+            
+            // 创建悬浮球
+            this.floatingTimer = new FloatingTimer(this.timeTracker);
+            
+            console.log('[主应用] 时间统计功能初始化完成');
+        } catch (error) {
+            console.error('[主应用] 时间统计功能初始化失败:', error);
+        }
     }
 
     /**

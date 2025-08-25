@@ -12,6 +12,404 @@ body {
     background-color: #f5f5f5;
 }
 
+/* 悬浮计时器样式 */
+.floating-timer-ball {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 80px;
+    height: 80px;
+    background: #3498db;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    z-index: 1000;
+    user-select: none;
+    color: white;
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.floating-timer-ball:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.floating-timer-ball.active {
+    background: #5dade2;
+    animation: pulse 2s infinite;
+}
+
+.floating-timer-ball.paused {
+    background: #85c1e9;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    50% {
+        box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+    }
+    100% {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+}
+
+.timer-icon {
+    font-size: 20px;
+    margin-bottom: 2px;
+}
+
+.timer-text {
+    font-size: 9px;
+    text-align: center;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 70px;
+}
+
+/* 时间统计弹窗样式 */
+.timer-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    z-index: 2000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.timer-modal.show {
+    opacity: 1;
+}
+
+.timer-modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 12px;
+    padding: 0;
+    max-width: 400px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.timer-modal-header {
+    background: #3498db;
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.timer-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.timer-modal-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s;
+}
+
+.timer-modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.timer-modal-body {
+    padding: 30px;
+}
+
+/* 新的统计布局样式 */
+.stats-summary {
+    margin-bottom: 30px;
+}
+
+.main-stat {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 20px;
+    background: #3498db;
+    border-radius: 15px;
+    color: white;
+}
+
+.main-stat .stat-label {
+    font-size: 14px;
+    opacity: 0.9;
+    margin-bottom: 8px;
+}
+
+.main-stat .stat-value.large {
+    font-size: 32px;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.sub-stats {
+    display: flex;
+    justify-content: space-around;
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 15px 5px;
+}
+
+.sub-stat {
+    text-align: center;
+    flex: 1;
+}
+
+.sub-stat .label {
+    font-size: 12px;
+    color: #666;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.sub-stat .value {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+/* 保留旧样式以兼容其他地方 */
+.timer-stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.timer-stat-item:last-of-type {
+    border-bottom: none;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+.stat-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.timer-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 0;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 20px;
+}
+
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #ccc;
+}
+
+.status-indicator.active {
+    background: #27ae60;
+    animation: blink 1.5s infinite;
+}
+
+.status-indicator.paused {
+    background: #5dade2;
+}
+
+.status-indicator.inactive {
+    background: #95a5a6;
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0.3; }
+}
+
+#trackingText {
+    font-size: 14px;
+    color: #666;
+}
+
+.timer-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.timer-actions .btn {
+    padding: 8px 16px;
+    font-size: 12px;
+}
+
+/* 统计网格布局 */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin-bottom: 20px;
+}
+
+.stats-grid .timer-stat-item {
+    border-bottom: 1px solid #eee;
+    border-right: 1px solid #eee;
+    padding: 15px;
+    margin: 0;
+}
+
+.stats-grid .timer-stat-item:nth-child(2n) {
+    border-right: none;
+}
+
+.stats-grid .timer-stat-item:nth-last-child(-n+2) {
+    border-bottom: none;
+}
+
+/* 周统计图表 */
+.week-chart-section {
+    margin: 20px 0;
+    padding: 20px 0;
+    border-top: 1px solid #eee;
+}
+
+.week-chart-section h4 {
+    margin: 0 0 15px 0;
+    font-size: 16px;
+    color: #2c3e50;
+    text-align: center;
+}
+
+.week-chart {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+    height: 120px;
+    margin: 15px 0;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    position: relative;
+}
+
+.day-stats {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    max-width: 40px;
+}
+
+.day-bar {
+    width: 20px;
+    background: #3498db;
+    border-radius: 2px 2px 0 0;
+    min-height: 2px;
+    margin-bottom: 5px;
+    transition: all 0.3s ease;
+}
+
+.day-label {
+    font-size: 10px;
+    color: #666;
+    margin-bottom: 2px;
+    font-weight: 500;
+}
+
+.day-time {
+    font-size: 9px;
+    color: #333;
+    font-weight: 600;
+}
+
+.day-sessions {
+    font-size: 8px;
+    color: #999;
+    margin-top: 1px;
+}
+
+/* 移动端适配 */
+@media (max-width: 480px) {
+    .timer-modal-content {
+        max-width: 95%;
+        margin: 10px;
+    }
+    
+    .timer-modal-body {
+        padding: 20px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-grid .timer-stat-item {
+        border-right: none;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .stats-grid .timer-stat-item:last-child {
+        border-bottom: none;
+    }
+    
+    .week-chart {
+        height: 100px;
+        padding: 5px;
+    }
+    
+    .day-bar {
+        width: 15px;
+    }
+    
+    .floating-timer-ball {
+        width: 70px;
+        height: 70px;
+        bottom: 20px;
+        right: 15px;
+    }
+    
+    .timer-icon {
+        font-size: 18px;
+    }
+    
+    .timer-text {
+        font-size: 8px;
+        max-width: 60px;
+    }
+}
+
 /* 页面布局 */
 .page {
     display: none;
@@ -89,13 +487,21 @@ nav {
     background: #2980b9;
 }
 
+/* 开始阅读按钮居中并与导入按钮同宽 */
+#startReadingBtn {
+    display: block;
+    margin: 1.5rem auto 0;
+    text-align: center;
+    width: 100%;
+}
+
 .btn.secondary {
-    background: #95a5a6;
+    background: #5dade2;
     color: white;
 }
 
 .btn.secondary:hover {
-    background: #7f8c8d;
+    background: #3498db;
 }
 
 .btn.control {
@@ -131,15 +537,15 @@ nav {
 
 /* 特殊状态按钮样式 */
 .btn.control.active {
-    background: #007bff;
+    background: #3498db;
     color: white;
-    border-color: #007bff;
+    border-color: #3498db;
 }
 
 .btn.control.favorite {
-    background: #dc3545;
+    background: #5dade2;
     color: white;
-    border-color: #dc3545;
+    border-color: #5dade2;
 }
 
 /* 文件上传样式 */
@@ -632,7 +1038,7 @@ nav {
 }
 
 .delete-btn {
-    background: #e74c3c;
+    background: #85c1e9;
     color: white;
     border: none;
     border-radius: 50%;
@@ -653,7 +1059,7 @@ nav {
 }
 
 .delete-btn:hover {
-    background: #c0392b;
+    background: #3498db;
     transform: scale(1.1);
     opacity: 1; /* 悬停时完全不透明 */
 }

@@ -24,6 +24,9 @@ class ReadingApp extends BaseApp {
         // DOM元素缓存
         this.cacheElements();
         
+        // 初始化时间统计
+        this.initTimeTracking();
+        
         // 初始化应用
         this.init();
     }
@@ -60,6 +63,23 @@ class ReadingApp extends BaseApp {
             explanationPanel: document.getElementById('explanationPanel'),
             readingPanel: document.getElementById('readingPanel')
         };
+    }
+
+    /**
+     * 初始化时间统计功能
+     */
+    initTimeTracking() {
+        try {
+            // 创建时间追踪器
+            this.timeTracker = new TimeTracker();
+            
+            // 创建悬浮球
+            this.floatingTimer = new FloatingTimer(this.timeTracker);
+            
+            console.log('[阅读应用] 时间统计功能初始化完成');
+        } catch (error) {
+            console.error('[阅读应用] 时间统计功能初始化失败:', error);
+        }
     }
 
     /**
@@ -272,7 +292,8 @@ class ReadingApp extends BaseApp {
         element.addEventListener('dblclick', (e) => {
             if (e.target.classList.contains('word')) {
                 e.stopPropagation();
-                this.toggleWordHighlight(e.target);
+                // 传递单词元素和所在的句子元素
+                this.toggleWordHighlight(e.target, element);
             }
         });
         
@@ -289,7 +310,7 @@ class ReadingApp extends BaseApp {
      * 切换单词高亮状态
      * @param {Element} wordElement - 单词元素
      */
-    async toggleWordHighlight(wordElement) {
+    async toggleWordHighlight(wordElement, sentenceElement) {
         const word = wordElement.dataset.word;
         
         if (wordElement.classList.contains('highlighted')) {
@@ -297,26 +318,30 @@ class ReadingApp extends BaseApp {
             this.removeWordHighlightAndExplanation(word);
         } else {
             // 添加高亮
-            await this.addWordHighlight(word);
+            await this.addWordHighlight(word, sentenceElement);
         }
     }
 
     /**
      * 添加单词高亮
      * @param {string} word - 单词
+     * @param {Element} sentenceElement - 单词所在的句子元素
      */
-    async addWordHighlight(word) {
+    async addWordHighlight(word, sentenceElement) {
         try {
+            // 获取单词所在句子的索引
+            const sentenceIndex = parseInt(sentenceElement.dataset.index);
+            
             // 添加视觉高亮
             document.querySelectorAll(`[data-word="${word}"]`).forEach(el => {
                 el.classList.add('highlighted');
             });
             
-            // 保存到存储
-            this.storage.addHighlightedWord(this.currentArticleId, word, this.currentSentenceIndex);
+            // 保存到存储（使用正确的句子索引）
+            this.storage.addHighlightedWord(this.currentArticleId, word, sentenceIndex);
             
-            // 生成解释
-            await this.generateWordExplanation(word);
+            // 生成解释（传递正确的句子索引）
+            await this.generateWordExplanation(word, sentenceIndex);
             
         } catch (error) {
             console.error('添加单词高亮失败:', error);
@@ -358,11 +383,13 @@ class ReadingApp extends BaseApp {
     /**
      * 生成单词解释
      * @param {string} word - 单词
+     * @param {number} sentenceIndex - 单词所在句子的索引
      */
-    async generateWordExplanation(word) {
+    async generateWordExplanation(word, sentenceIndex = null) {
         try {
-            // 获取当前句子作为上下文
-            const currentSentence = this.sentences[this.currentSentenceIndex] || '';
+            // 获取正确的句子作为上下文
+            const targetSentenceIndex = sentenceIndex !== null ? sentenceIndex : this.currentSentenceIndex;
+            const currentSentence = this.sentences[targetSentenceIndex] || '';
             
             const explanation = await this.googleAPI.explainWord(word, currentSentence);
             this.addExplanationToPanel('word', word, explanation);
@@ -911,7 +938,14 @@ class ReadingApp extends BaseApp {
             if (type === 'word') {
                 this.addExplanationToPanel('word', index, data);
             } else if (type === 'sentence') {
+                // 恢复句子解释和视觉标识
                 this.addExplanationToPanel('sentence', parseInt(index), data);
+                
+                // 同时恢复句子的favorited状态（如果DOM中还没有的话）
+                const sentenceElement = document.querySelector(`[data-index="${index}"]`);
+                if (sentenceElement && !sentenceElement.classList.contains('favorited')) {
+                    sentenceElement.classList.add('favorited');
+                }
             }
         });
         

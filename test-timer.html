@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时间统计功能测试</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div style="padding: 20px; text-align: center;">
+        <h1>🕒 时间统计功能测试</h1>
+        <p>这是一个测试页面，用于验证新增的时间统计功能：</p>
+        <ul style="text-align: left; max-width: 400px; margin: 20px auto;">
+            <li>✅ 周统计功能</li>
+            <li>✅ 打开次数/会话统计</li>
+            <li>✅ 移除时间重置功能</li>
+            <li>✅ 数据导出功能</li>
+            <li>✅ 增强的统计界面</li>
+        </ul>
+        
+        <div style="margin: 30px 0;">
+            <h3>测试步骤：</h3>
+            <ol style="text-align: left; max-width: 500px; margin: 20px auto;">
+                <li>观察右下角的悬浮时间球</li>
+                <li>点击悬浮球查看详细统计</li>
+                <li>查看新增的本周学习时长和会话数统计</li>
+                <li>查看最近7天的学习图表</li>
+                <li>点击"📊 导出数据"按钮测试数据导出</li>
+                <li>切换到其他标签页测试暂停功能</li>
+                <li>重新回到页面测试恢复功能</li>
+            </ol>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h4>页面活跃状态测试：</h4>
+            <p>💡 <strong>提示：</strong>切换到其他标签页或最小化窗口时，时间计算会自动暂停，悬浮球会变成橙色。回到此页面时会自动恢复计时，悬浮球变为蓝色并有脉动效果。</p>
+        </div>
+        
+        <button onclick="window.location.href='./'" style="padding: 10px 20px; font-size: 16px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            返回主页
+        </button>
+    </div>
+
+    <!-- 引入时间统计模块 -->
+    <script src="utils.js"></script>
+    <script src="storage.js"></script>
+    <script src="time-tracker.js"></script>
+    <script src="floating-timer.js"></script>
+    
+    <script>
+        // 初始化时间统计
+        const timeTracker = new TimeTracker();
+        const floatingTimer = new FloatingTimer(timeTracker);
+        
+        console.log('时间统计测试页面已加载');
+    </script>
+</body>
+</html> 
