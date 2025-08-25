@@ -117,11 +117,10 @@ class MainApp extends BaseApp {
      */
     initTimeTracking() {
         try {
-            // 创建时间追踪器
-            this.timeTracker = new TimeTracker();
-            
-            // 创建悬浮球
-            this.floatingTimer = new FloatingTimer(this.timeTracker);
+            // 使用全局时间管理器
+            const timeInstances = window.globalTimeManager.initTimeTracking('主页面');
+            this.timeTracker = timeInstances.timeTracker;
+            this.floatingTimer = timeInstances.floatingTimer;
             
             console.log('[主应用] 时间统计功能初始化完成');
         } catch (error) {
@@ -253,6 +252,16 @@ class MainApp extends BaseApp {
         if (!this.currentArticle) {
             Utils.showToast('请先选择文章', 'error');
             return;
+        }
+        
+        // 增加阅读次数统计
+        if (window.globalTimeManager && window.globalTimeManager.getTimeTracker()) {
+            window.globalTimeManager.getTimeTracker().incrementReadingCount();
+        }
+        
+        // 通知全局时间管理器页面切换
+        if (window.globalTimeManager) {
+            window.globalTimeManager.handlePageTransition('主页面', '阅读页面');
         }
         
         // 跳转到阅读页面

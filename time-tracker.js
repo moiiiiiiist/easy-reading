@@ -11,9 +11,9 @@ class TimeTracker {
         this.weekTime = 0;
         this.isTracking = false;
         
-        // 会话统计
-        this.sessionCount = 0;
-        this.totalSessions = 0;
+        // 阅读次数统计
+        this.readingCount = 0;
+        this.totalReadings = 0;
         
         // 每日详细记录
         this.dailyRecords = {};
@@ -205,44 +205,60 @@ class TimeTracker {
         this.totalTime = data.totalTime || 0;
         this.todayTime = data.todayTime || 0;
         this.weekTime = data.weekTime || 0;
-        this.totalSessions = data.totalSessions || 0;
+        this.totalReadings = data.totalReadings || 0;
         this.dailyRecords = data.dailyRecords || {};
         
-        // 检查今日会话数
+        // 检查今日阅读次数
         const today = new Date().toDateString();
         if (this.dailyRecords[today]) {
-            this.sessionCount = this.dailyRecords[today].sessions || 0;
+            this.readingCount = this.dailyRecords[today].readings || 0;
         } else {
-            this.sessionCount = 0;
+            this.readingCount = 0;
         }
         
-        // 只有在开始新的计时会话时才增加会话数
-        this.startNewSession();
+        // 初始化时间追踪但不自动增加阅读次数
+        this.startTracking();
         
-        console.log(`[时间统计] 加载历史数据：总时间=${this.formatTime(this.totalTime)}, 今日时间=${this.formatTime(this.todayTime)}, 本周时间=${this.formatTime(this.weekTime)}, 今日会话数=${this.sessionCount}`);
+        console.log(`[时间统计] 加载历史数据：总时间=${this.formatTime(this.totalTime)}, 今日时间=${this.formatTime(this.todayTime)}, 本周时间=${this.formatTime(this.weekTime)}, 今日阅读次数=${this.readingCount}`);
     }
     
     /**
-     * 开始新的会话
+     * 增加阅读次数（当用户点击开始阅读时调用）
      */
-    startNewSession() {
+    incrementReadingCount() {
         const today = new Date().toDateString();
-        const lastSessionKey = 'last_session_date';
-        const lastSessionDate = localStorage.getItem(lastSessionKey);
-        
-        // 只有在新的一天或者距离上次会话超过30分钟才算新会话
         const now = Date.now();
-        const lastUpdate = this.getStoredData().lastUpdate || 0;
-        const thirtyMinutes = 30 * 60 * 1000;
         
-        if (lastSessionDate !== today || (now - lastUpdate > thirtyMinutes)) {
-            this.sessionCount++;
-            if (lastSessionDate !== today) {
-                // 新的一天，重置今日会话数
-                this.sessionCount = 1;
-            }
-            localStorage.setItem(lastSessionKey, today);
-            console.log(`[时间统计] 开始新会话，今日第${this.sessionCount}次`);
+        // 增加今日阅读次数
+        this.readingCount++;
+        this.totalReadings++;
+        
+        console.log(`[时间统计] 开始新的阅读，今日第${this.readingCount}次`);
+        
+        // 更新每日记录
+        this.updateDailyRecord(today, now);
+        this.saveTimeData();
+    }
+    
+    /**
+     * 更新每日记录
+     */
+    updateDailyRecord(today, now) {
+        if (!this.dailyRecords[today]) {
+            this.dailyRecords[today] = {
+                time: 0,
+                readings: 0,
+                firstReading: now,
+                lastReading: now
+            };
+        }
+        this.dailyRecords[today].time = this.todayTime;
+        this.dailyRecords[today].readings = this.readingCount;
+        this.dailyRecords[today].lastReading = now;
+        
+        // 如果是第一次阅读，记录时间
+        if (this.readingCount === 1) {
+            this.dailyRecords[today].firstReading = now;
         }
     }
     
@@ -254,23 +270,13 @@ class TimeTracker {
         const now = Date.now();
         
         // 更新每日记录
-        if (!this.dailyRecords[today]) {
-            this.dailyRecords[today] = {
-                time: 0,
-                sessions: 0,
-                firstSession: now,
-                lastSession: now
-            };
-        }
-        this.dailyRecords[today].time = this.todayTime;
-        this.dailyRecords[today].sessions = this.sessionCount;
-        this.dailyRecords[today].lastSession = now;
+        this.updateDailyRecord(today, now);
         
         const data = {
             totalTime: this.totalTime,
             todayTime: this.todayTime,
             weekTime: this.weekTime,
-            totalSessions: this.totalSessions,
+            totalReadings: this.totalReadings,
             dailyRecords: this.dailyRecords,
             lastDate: today,
             lastUpdate: now
@@ -341,8 +347,8 @@ class TimeTracker {
             todayTime: this.todayTime,
             weekTime: this.weekTime,
             totalTime: this.totalTime,
-            sessionCount: this.sessionCount,
-            totalSessions: this.totalSessions,
+            readingCount: this.readingCount,
+            totalReadings: this.totalReadings,
             todayFormatted: this.formatTime(this.todayTime),
             weekFormatted: this.formatTime(this.weekTime),
             totalFormatted: this.formatTime(this.totalTime),
@@ -406,12 +412,12 @@ class TimeTracker {
             date.setDate(today.getDate() - i);
             const dateStr = date.toDateString();
             
-            const dayRecord = this.dailyRecords[dateStr] || { time: 0, sessions: 0 };
+            const dayRecord = this.dailyRecords[dateStr] || { time: 0, readings: 0 };
             records.push({
                 date: dateStr,
                 dayName: date.toLocaleDateString('zh-CN', { weekday: 'short' }),
                 time: dayRecord.time,
-                sessions: dayRecord.sessions,
+                readings: dayRecord.readings,
                 timeFormatted: this.formatTime(dayRecord.time)
             });
         }
@@ -426,18 +432,16 @@ class TimeTracker {
         this.totalTime = 0;
         this.todayTime = 0;
         this.weekTime = 0;
-        this.sessionCount = 0;
-        this.totalSessions = 0;
+        this.readingCount = 0;
+        this.totalReadings = 0;
         this.dailyRecords = {};
         
         // 清除存储的数据
         localStorage.removeItem(this.STORAGE_KEY);
-        localStorage.removeItem('last_session_date');
         
         // 重新开始追踪
         this.sessionStartTime = Date.now();
         this.isTracking = true;
-        this.startNewSession();
         
         console.log('[时间统计] 所有数据已重置');
     }

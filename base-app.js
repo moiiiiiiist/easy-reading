@@ -444,7 +444,7 @@ class BaseApp {
         if (window.innerWidth <= 768) {
             setTimeout(() => {
                 const viewportHeight = window.innerHeight;
-                const initialHeightVh = 40; // 默认40vh
+                const initialHeightVh = 30; // 默认30vh
                 
                 leftPanel.style.height = initialHeightVh + 'vh';
                 leftPanel.style.top = '0';

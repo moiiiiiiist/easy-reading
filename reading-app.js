@@ -70,11 +70,10 @@ class ReadingApp extends BaseApp {
      */
     initTimeTracking() {
         try {
-            // 创建时间追踪器
-            this.timeTracker = new TimeTracker();
-            
-            // 创建悬浮球
-            this.floatingTimer = new FloatingTimer(this.timeTracker);
+            // 使用全局时间管理器
+            const timeInstances = window.globalTimeManager.initTimeTracking('阅读页面');
+            this.timeTracker = timeInstances.timeTracker;
+            this.floatingTimer = timeInstances.floatingTimer;
             
             console.log('[阅读应用] 时间统计功能初始化完成');
         } catch (error) {
@@ -133,6 +132,11 @@ class ReadingApp extends BaseApp {
         this.audioManager.stop();
         this.isPlaying = false;
         this.updatePlayButton();
+        
+        // 通知全局时间管理器页面切换
+        if (window.globalTimeManager) {
+            window.globalTimeManager.handlePageTransition('阅读页面', '主页面');
+        }
         
         // 跳转回主页面
         window.location.href = 'index.html';

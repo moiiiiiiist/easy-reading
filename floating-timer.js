@@ -73,8 +73,8 @@ class FloatingTimer {
                                 <span class="value" id="totalTimeValue">0分钟</span>
                             </div>
                             <div class="sub-stat">
-                                <span class="label">今日会话：</span>
-                                <span class="value" id="sessionCountValue">0</span>
+                                <span class="label">今日阅读：</span>
+                                <span class="value" id="readingCountValue">0</span>
                             </div>
                         </div>
                     </div>
@@ -238,8 +238,8 @@ class FloatingTimer {
         this.modal.querySelector('#weekTimeValue').textContent = stats.weekFormatted;
         this.modal.querySelector('#totalTimeValue').textContent = stats.totalFormatted;
         
-        // 更新会话统计
-        this.modal.querySelector('#sessionCountValue').textContent = stats.sessionCount;
+        // 更新阅读次数统计
+        this.modal.querySelector('#readingCountValue').textContent = stats.readingCount;
         
         // 更新最近7天数据
         this.updateWeekChart(stats);
@@ -265,7 +265,7 @@ class FloatingTimer {
                 <div class="day-bar" style="height: ${heightPercent}%"></div>
                 <div class="day-label">${day.dayName}</div>
                 <div class="day-time">${day.timeFormatted}</div>
-                <div class="day-sessions">${day.sessions}次</div>
+                <div class="day-readings">${day.readings}次</div>
             `;
             
             chartContainer.appendChild(dayElement);
@@ -314,6 +314,24 @@ class FloatingTimer {
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
             this.updateInterval = null;
+        }
+    }
+    
+    /**
+     * 显示悬浮球
+     */
+    show() {
+        if (this.floatingBall) {
+            this.floatingBall.style.display = 'flex';
+        }
+    }
+    
+    /**
+     * 隐藏悬浮球
+     */
+    hide() {
+        if (this.floatingBall) {
+            this.floatingBall.style.display = 'none';
         }
     }
     
