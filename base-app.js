@@ -88,6 +88,96 @@ class BaseApp {
     }
 
     /**
+     * 处理文本导入
+     * @param {string} content - 粘贴的文本内容
+     * @param {string} customTitle - 用户输入的自定义标题
+     * @param {Element} importBtn - 导入按钮元素
+     */
+    async handleTextImport(content, customTitle, importBtn) {
+        if (!content || content.trim() === '') {
+            Utils.showToast('请输入文章内容', 'error');
+            return null;
+        }
+        
+        try {
+            Utils.setLoading(importBtn, true);
+            
+            const trimmedContent = content.trim();
+            
+            // 分割句子并保留段落信息
+            const { sentences, paragraphBreaks } = this.splitter.splitIntoSentencesWithBreaks(trimmedContent);
+            
+            if (sentences.length === 0) {
+                Utils.showToast('文本内容为空或格式不正确', 'error');
+                return null;
+            }
+            
+            // 生成标题：使用自定义标题或前5个单词
+            let title = customTitle && customTitle.trim() !== '' 
+                ? customTitle.trim() 
+                : this.generateTitleFromContent(trimmedContent);
+            
+            // 统计信息
+            const stats = this.splitter.getTextStats(trimmedContent, sentences);
+            
+            // 创建文章数据
+            const articleData = {
+                title: title,
+                content: trimmedContent,
+                sentences: sentences,
+                paragraphBreaks: paragraphBreaks,
+                stats: stats,
+                timestamp: Date.now()
+            };
+            
+            // 保存文章数据
+            const articleId = this.storage.saveArticle(articleData);
+            this.currentArticleId = articleId;
+            this.storage.setCurrentArticleId(articleId);
+            this.currentArticle = this.storage.getArticle(articleId);
+            
+            Utils.showToast('文章导入成功', 'success');
+            return this.currentArticle;
+            
+        } catch (error) {
+            console.error('文本导入失败:', error);
+            Utils.showToast('文本导入失败: ' + error.message, 'error');
+            return null;
+        } finally {
+            Utils.setLoading(importBtn, false);
+        }
+    }
+
+    /**
+     * 从内容生成标题（使用前5个单词）
+     * @param {string} content - 文章内容
+     * @returns {string} 生成的标题
+     */
+    generateTitleFromContent(content) {
+        // 清理文本：移除多余的换行符和空格
+        const cleanText = content.replace(/\s+/g, ' ').trim();
+        
+        // 按空格分割单词
+        const words = cleanText.split(' ');
+        
+        // 取前5个单词，如果不足5个就全部使用
+        const titleWords = words.slice(0, 5);
+        
+        // 组合成标题，如果原文很长则加省略号
+        let title = titleWords.join(' ');
+        if (words.length > 5) {
+            title += '...';
+        }
+        
+        // 限制标题长度，避免过长
+        if (title.length > 50) {
+            title = title.substring(0, 47) + '...';
+        }
+        
+        return title || '未命名文章';
+    }
+
+    /**
      * 更新文章列表 - 通用方法
      * @param {Element} container - 文章列表容器
      * @param {string} appInstanceName - 应用实例名称 (如 'mainApp' 或 'app')
@@ -248,11 +338,13 @@ class BaseApp {
      */
     initResizer(resizer, leftPanel, rightPanel, container) {
         let isResizing = false;
+        let animationId = null;
+        let lastTouchY = null;
         
         // 桌面端鼠标事件
         resizer.addEventListener('mousedown', startResize);
         
-        // 移动端触摸事件
+        // 移动端触摸事件 - 优化为非passive以确保preventDefault生效
         resizer.addEventListener('touchstart', startResizeTouch, { passive: false });
         
         function startResize(e) {
@@ -264,9 +356,11 @@ class BaseApp {
         
         function startResizeTouch(e) {
             isResizing = true;
+            lastTouchY = e.touches[0].clientY;
             document.addEventListener('touchmove', handleResizeTouch, { passive: false });
             document.addEventListener('touchend', stopResize);
             e.preventDefault();
+            e.stopPropagation();
         }
         
         function handleResize(e) {
@@ -276,11 +370,11 @@ class BaseApp {
             const containerWidth = containerRect.width;
             const mouseX = e.clientX - containerRect.left;
             
-            const leftWidth = (mouseX / containerWidth) * 100;
-            const rightWidth = 100 - leftWidth;
+            let leftWidth = (mouseX / containerWidth) * 100;
             
-            // 限制最小宽度 - 允许拉到99%，最小宽度1%
-            if (leftWidth < 1 || rightWidth < 1) return;
+            // 限制最小宽度 - 允许拉到97%，最小宽度3%
+            leftWidth = Math.max(3, Math.min(97, leftWidth));
+            const rightWidth = 100 - leftWidth;
             
             leftPanel.style.width = leftWidth + '%';
             rightPanel.style.width = rightWidth + '%';
@@ -289,32 +383,78 @@ class BaseApp {
         function handleResizeTouch(e) {
             if (!isResizing) return;
             
+            e.preventDefault();
+            e.stopPropagation();
+            
             const touchY = e.touches[0].clientY;
+            lastTouchY = touchY;
+            
+            // 使用requestAnimationFrame来优化性能
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            
+            animationId = requestAnimationFrame(() => {
+                updatePanelPositions(lastTouchY);
+            });
+        }
+        
+        function updatePanelPositions(touchY) {
             const viewportHeight = window.innerHeight;
             
             // 计算解释区高度（vh单位）- 触摸点即为分割线位置
-            const explanationHeightVh = (touchY / viewportHeight) * 100;
+            let explanationHeightVh = (touchY / viewportHeight) * 100;
             
-            // 限制最小高度 - 允许拉到99%，最小高度1vh
-            if (explanationHeightVh < 1 || explanationHeightVh > 99) return;
+            // 边界限制 - 考虑到resizer的transform偏移(-4px)，需要留足够空间
+            // 计算安全边界：确保拖拽条始终在视口内可见
+            const minHeightVh = Math.max(3, (8 / viewportHeight) * 100); // 最小3%，至少8px的安全距离
+            const maxHeightVh = Math.min(97, 100 - (8 / viewportHeight) * 100); // 最大97%，底部也留8px安全距离
+            explanationHeightVh = Math.max(minHeightVh, Math.min(maxHeightVh, explanationHeightVh));
+            
+            // 计算阅读区高度（包含控制按钮）- 占用剩余的全部空间
+            const readingHeightVh = 100 - explanationHeightVh;
             
             // 更新CSS样式
             leftPanel.style.height = explanationHeightVh + 'vh';
             leftPanel.style.top = '0';
             
             rightPanel.style.top = explanationHeightVh + 'vh';
-            rightPanel.style.height = (100 - explanationHeightVh - 8) + 'vh'; // 减去控制栏高度
+            rightPanel.style.height = readingHeightVh + 'vh';
             
-            // 移动resizer位置
-            resizer.style.top = explanationHeightVh + 'vh';
+            // 移动resizer位置 - 使用 !important 强制覆盖CSS
+            resizer.style.setProperty('top', explanationHeightVh + 'vh', 'important');
         }
         
         function stopResize() {
             isResizing = false;
+            lastTouchY = null;
+            
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            
             document.removeEventListener('mousemove', handleResize);
             document.removeEventListener('mouseup', stopResize);
             document.removeEventListener('touchmove', handleResizeTouch);
             document.removeEventListener('touchend', stopResize);
+        }
+        
+        // 移动端初始化：确保分隔条位置正确，防止出现灰色条
+        if (window.innerWidth <= 768) {
+            setTimeout(() => {
+                const viewportHeight = window.innerHeight;
+                const initialHeightVh = 40; // 默认40vh
+                
+                leftPanel.style.height = initialHeightVh + 'vh';
+                leftPanel.style.top = '0';
+                
+                rightPanel.style.top = initialHeightVh + 'vh';
+                rightPanel.style.height = (100 - initialHeightVh) + 'vh';
+                
+                // 初始化时也使用 !important 强制覆盖CSS
+                resizer.style.setProperty('top', initialHeightVh + 'vh', 'important');
+            }, 50); // 延迟50ms确保DOM完全加载
         }
     }
 

@@ -107,14 +107,48 @@ class SentenceSplitter {
         const numberedLines = lines.filter(line => /^\d+\./.test(line.trim()));
         
         if (numberedLines.length > lines.length * 0.5) {
-            // 这是一个编号列表，按行分割
-            const sentences = lines
-                .map(line => line.trim())
-                .filter(line => line.length > 0);
+            // 这是一个编号列表，需要特殊处理
+            const sentences = [];
+            const paragraphBreaks = [];
+            
+            lines.forEach((line, lineIndex) => {
+                const trimmedLine = line.trim();
+                if (trimmedLine.length === 0) return;
+                
+                // 检查是否以数字开头
+                if (/^\d+\./.test(trimmedLine)) {
+                    // 移除编号，获取内容部分
+                    const content = trimmedLine.replace(/^\d+\.\s*/, '');
+                    
+                    // 将内容分割为句子
+                    const lineSentences = this.splitIntoSentences(content);
+                    
+                    // 将第一个句子与编号合并
+                    if (lineSentences.length > 0) {
+                        const numbering = trimmedLine.match(/^\d+\.\s*/)[0];
+                        lineSentences[0] = numbering + lineSentences[0];
+                        
+                        // 添加所有句子
+                        sentences.push(...lineSentences);
+                        
+                        // 如果这不是最后一行编号项，添加段落分隔
+                        if (lineIndex < lines.length - 1) {
+                            const nextLine = lines[lineIndex + 1];
+                            if (nextLine.trim() === '' || /^\d+\./.test(nextLine.trim())) {
+                                paragraphBreaks.push(sentences.length - 1);
+                            }
+                        }
+                    }
+                } else {
+                    // 非编号行，正常分割句子
+                    const lineSentences = this.splitIntoSentences(trimmedLine);
+                    sentences.push(...lineSentences);
+                }
+            });
             
             return {
                 sentences: sentences,
-                paragraphBreaks: []
+                paragraphBreaks: paragraphBreaks
             };
         }
 

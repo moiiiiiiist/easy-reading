@@ -28,6 +28,7 @@ header {
     padding: 1rem 2rem;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     margin-bottom: 2rem;
+    text-align: center; /* 整个header居中 */
 }
 
 header h1 {
@@ -38,6 +39,7 @@ header h1 {
 nav {
     display: flex;
     gap: 1rem;
+    justify-content: center; /* nav按钮居中 */
 }
 
 .nav-btn {
@@ -159,6 +161,60 @@ nav {
 .file-name {
     color: #666;
     font-style: italic;
+}
+
+/* 粘贴文本样式 */
+.text-paste-section {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eee;
+}
+
+.text-paste-section h3 {
+    margin: 0 0 1rem 0;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+.text-import-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.title-input {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.title-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.text-paste-area {
+    min-height: 120px;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-family: inherit;
+    resize: vertical;
+    transition: border-color 0.3s ease;
+}
+
+.text-paste-area:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.text-paste-area::placeholder {
+    color: #999;
 }
 
 /* 文章列表样式 */
@@ -315,6 +371,12 @@ nav {
     margin-right: 1rem;
 }
 
+.setting-group .button-container {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
 .setting-hint {
     font-size: 0.9rem;
     color: #7f8c8d;
@@ -405,7 +467,7 @@ nav {
 /* 词句解释栏 */
 .explanation-panel {
     width: 40%;
-    min-width: 300px;
+    min-width: 3%; /* 允许拖拽到最小3% */
     background: white;
     border-right: 1px solid #ddd;
     display: flex;
@@ -424,6 +486,7 @@ nav {
     border-bottom: 1px solid #ddd;
     flex-shrink: 0; /* 标题不缩放 */
     position: relative; /* 为绝对定位的按钮提供参考 */
+    height: 60px; /* 与controls高度一致 */
 }
 
 .explanation-header h3 {
@@ -849,6 +912,8 @@ nav {
         border-bottom: 1px solid #ddd;
         z-index: 999;
         background: white;
+        overflow: hidden; /* 防止内容溢出 */
+        border-top: none; /* 确保顶部没有边框 */
     }
     
     /* 手机端隐藏解释区header */
@@ -860,6 +925,8 @@ nav {
     .explanation-content {
         height: 40vh;
         padding-top: 0.5rem;
+        overflow-y: auto;
+        background: white; /* 确保背景是白色 */
     }
     
     .resizer {
@@ -875,6 +942,10 @@ nav {
         transform: translateY(-4px); /* 居中对齐 */
         opacity: 0.8;
         touch-action: none; /* 防止页面滚动 */
+        transition: none; /* 移除过渡效果避免初始化时的闪烁 */
+        border: none; /* 确保没有边框 */
+        outline: none; /* 移除轮廓 */
+        box-shadow: none; /* 移除阴影 */
     }
     
     .resizer::before {
@@ -887,6 +958,7 @@ nav {
         font-size: 12px;
         font-weight: bold;
         letter-spacing: 2px;
+        pointer-events: none; /* 防止干扰触摸事件 */
     }
     
     /* 手机端阅读面板从解释区下方开始 */

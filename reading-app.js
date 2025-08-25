@@ -211,6 +211,11 @@ class ReadingApp extends BaseApp {
             }
         });
         
+        // 在文章末尾添加空行，防止移动端控制按钮遮盖文本
+        for (let i = 0; i < 5; i++) {
+            container.appendChild(document.createElement('br'));
+        }
+        
         // 应用已保存的高亮状态
         this.applyHighlightStates();
     }

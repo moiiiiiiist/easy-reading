@@ -27,6 +27,12 @@ class MainApp extends BaseApp {
             fileInput: document.getElementById('fileInput'),
             uploadBtn: document.getElementById('uploadBtn'),
             fileName: document.getElementById('fileName'),
+            
+            // 文本导入
+            articleTitleInput: document.getElementById('articleTitleInput'),
+            textPasteArea: document.getElementById('textPasteArea'),
+            importTextBtn: document.getElementById('importTextBtn'),
+            
             articleTitle: document.getElementById('articleTitle'),
             articleStats: document.getElementById('articleStats'),
             articleContent: document.getElementById('articleContent'),
@@ -82,8 +88,11 @@ class MainApp extends BaseApp {
         // 文件上传事件
         this.elements.uploadBtn.addEventListener('click', () => this.elements.fileInput.click());
         this.elements.fileInput.addEventListener('change', (e) => this.handleFileUpload(e));
+        
+        // 文本导入事件
+        this.elements.importTextBtn.addEventListener('click', () => this.handleTextImport());
+        
         this.elements.startReadingBtn.addEventListener('click', () => this.startReading());
-        this.elements.deleteArticleBtn.addEventListener('click', () => this.deleteCurrentArticle());
         
         // 设置保存事件
         this.elements.saveApiBtn.addEventListener('click', () => this.saveApiConfig());
@@ -139,6 +148,25 @@ class MainApp extends BaseApp {
     }
 
     /**
+     * 处理文本导入
+     */
+    async handleTextImport() {
+        const content = this.elements.textPasteArea.value;
+        const customTitle = this.elements.articleTitleInput.value;
+        
+        const article = await super.handleTextImport(content, customTitle, this.elements.importTextBtn);
+        if (article) {
+            // 清空输入框
+            this.elements.textPasteArea.value = '';
+            this.elements.articleTitleInput.value = '';
+            
+            // 更新界面
+            this.updateArticleList();
+            this.updateArticlePreview();
+        }
+    }
+
+    /**
      * 更新文章列表
      */
     updateArticleList() {
@@ -177,7 +205,6 @@ class MainApp extends BaseApp {
         this.elements.articleStats.textContent = '';
         this.elements.articleContent.textContent = '';
         this.elements.startReadingBtn.style.display = 'none';
-        this.elements.deleteArticleBtn.style.display = 'none';
     }
 
     /**
@@ -197,7 +224,6 @@ class MainApp extends BaseApp {
         this.elements.articleContent.textContent = preview;
         
         this.elements.startReadingBtn.style.display = 'block';
-        this.elements.deleteArticleBtn.style.display = 'block';
     }
 
     /**

@@ -27,6 +27,15 @@
                         <button id="uploadBtn" class="btn primary">选择TXT文件</button>
                         <span id="fileName" class="file-name"></span>
                     </div>
+                    
+                    <div class="text-paste-section">
+                        <h3>或粘贴文本</h3>
+                        <div class="text-import-form">
+                            <input type="text" id="articleTitleInput" placeholder="文章标题（可选，留空将自动生成）" class="title-input">
+                            <textarea id="textPasteArea" placeholder="在此粘贴文章内容..." class="text-paste-area"></textarea>
+                            <button id="importTextBtn" class="btn primary">导入文本</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="article-list-section">
@@ -41,7 +50,6 @@
                     <div id="articleStats" class="stats"></div>
                     <div id="articleContent" class="content-preview"></div>
                     <button id="startReadingBtn" class="btn primary" style="display: none;">开始阅读</button>
-                    <button id="deleteArticleBtn" class="btn secondary" style="display: none;">删除文章</button>
                 </div>
             </div>
 
@@ -63,24 +71,11 @@
 
                 <div class="setting-group">
                     <h3>Google Cloud TTS 配置</h3>
-                    <p class="setting-description">配置Google Cloud Text-to-Speech以获得更高质量的语音合成</p>
                     
                     <label for="googleCloudApiKey">Google Cloud API Key：</label>
                     <textarea id="googleCloudApiKey" placeholder="输入你的Google Cloud API Key" rows="3"></textarea>
-                    <p class="setting-hint">获取API Key请参考下方说明</p>
                     
-                    <div class="api-key-help">
-                        <h4>如何获取Google Cloud API Key：</h4>
-                        <ol>
-                            <li>访问 <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></li>
-                            <li>创建新项目或选择现有项目</li>
-                            <li>启用 <strong>Cloud Text-to-Speech API</strong></li>
-                            <li>进入"API和服务" > "凭据"</li>
-                            <li>点击"创建凭据" > "API密钥"</li>
-                            <li>复制生成的API密钥并粘贴到上方输入框</li>
-                        </ol>
-                        <p><strong>注意：</strong>API Key方式有使用限制，每月前400万字符免费，超出部分按量计费。</p>
-                    </div>
+
                     
                     <button id="saveGoogleCloudBtn" class="btn secondary">保存Google Cloud配置</button>
                     <button id="testGoogleCloudBtn" class="btn primary">测试Google Cloud TTS</button>
@@ -104,7 +99,6 @@
 
                 <div class="setting-group">
                     <h3>Google Cloud TTS 语音设置</h3>
-                    <p class="setting-description">配置Google Cloud TTS的语音参数，获得更高质量的语音合成效果</p>
                     
                     <label for="ttsVoice">语音选择：</label>
                     <select id="ttsVoice">
@@ -133,8 +127,8 @@
                     <select id="ttsSpeed">
                         <option value="0.5">0.5x - 很慢</option>
                         <option value="0.75">0.75x - 慢</option>
-                        <option value="0.9" selected>0.9x - 稍慢</option>
-                        <option value="1.0">1.0x - 正常</option>
+                        <option value="0.9">0.9x - 稍慢</option>
+                        <option value="1.0" selected>1.0x - 正常</option>
                         <option value="1.25">1.25x - 稍快</option>
                         <option value="1.5">1.5x - 快</option>
                         <option value="2.0">2.0x - 很快</option>
@@ -149,8 +143,10 @@
                         <option value="20.0">20.0 - 很高</option>
                     </select>
                     
-                    <button id="saveTTSBtn" class="btn secondary">保存Google Cloud TTS设置</button>
-                    <button id="testTTSBtn" class="btn primary">测试Google Cloud TTS发音</button>
+                    <div class="button-container">
+                        <button id="saveTTSBtn" class="btn secondary">保存Google Cloud TTS设置</button>
+                        <button id="testTTSBtn" class="btn primary">测试Google Cloud TTS发音</button>
+                    </div>
                 </div>
 
                 <div class="setting-group">
@@ -158,7 +154,9 @@
                     <label for="fontSize">字体大小：</label>
                     <input type="range" id="fontSize" min="12" max="24" value="16">
                     <span id="fontSizeValue">16px</span>
-                    <button id="saveFontBtn" class="btn secondary">保存字体设置</button>
+                    <div>
+                        <button id="saveFontBtn" class="btn secondary">保存字体设置</button>
+                    </div>
                 </div>
             </div>
         </div>
