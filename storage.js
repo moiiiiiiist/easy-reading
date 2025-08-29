@@ -584,7 +584,7 @@ class StorageManager {
             // 导入文章主体
             const articles = this.getArticles();
             articles[articleId] = articleData.article;
-            this.saveArticles(articles);
+            this.set(this.keys.ARTICLES, articles);
 
             // 导入标注数据
             if (articleData.annotations) {
