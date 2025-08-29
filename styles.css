@@ -1801,3 +1801,101 @@ nav {
     50% { opacity: 0.6; }
     100% { opacity: 1; }
 }
+
+/* 设置标签页导航样式 */
+.settings-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #ecf0f1;
+    padding-bottom: 15px;
+}
+
+.settings-tab-btn {
+    padding: 10px 16px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #f8f9fa;
+    color: #666;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 80px;
+    text-align: center;
+}
+
+.settings-tab-btn:hover {
+    background: #e9ecef;
+    color: #495057;
+    border-color: #adb5bd;
+}
+
+.settings-tab-btn.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.settings-tab-btn.active:hover {
+    background: #0056b3;
+    border-color: #004085;
+}
+
+/* 设置标签页内容 */
+.settings-tab-content {
+    display: none;
+}
+
+.settings-tab-content.active {
+    display: block;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .settings-nav {
+        flex-direction: column;
+    }
+    
+    .settings-tab-btn {
+        flex: none;
+        width: 100%;
+        margin-bottom: 5px;
+    }
+}
+
+@media (max-width: 480px) {
+    .settings-nav {
+        gap: 5px;
+    }
+    
+    .settings-tab-btn {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+}
+
+/* 设置导出/导入样式 */
+.settings-export-section, .settings-import-section {
+    border: 2px solid #e3f2fd;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    background: #fafafa;
+}
+
+.settings-export-section h4, .settings-import-section h4 {
+    margin: 0 0 10px 0;
+    color: #1976d2;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.settings-export-section p, .settings-import-section p {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 15px;
+}

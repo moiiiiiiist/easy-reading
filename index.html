@@ -57,185 +57,237 @@
             <div id="settingsPanel" class="section">
                 <h2>设置</h2>
                 
-                <div class="setting-group">
-                    <h3>API 配置</h3>
-                    <label for="geminiApiKey">Google AI Studio API Key (Gemini)：</label>
-                    <textarea id="geminiApiKey" placeholder="输入你的Google AI Studio API Key"></textarea>
-                    
-                    <button id="saveApiBtn" class="btn secondary">保存API配置</button>
-                    <div class="api-status">
-                        <p><strong>当前状态：</strong></p>
-                        <div id="apiStatus">未配置API</div>
-                    </div>
+                <!-- 设置导航栏 -->
+                <div class="settings-nav">
+                    <button class="settings-tab-btn active" data-tab="api">API配置</button>
+                    <button class="settings-tab-btn" data-tab="sync">多端同步</button>
+                    <button class="settings-tab-btn" data-tab="voice">语音设置</button>
+                    <button class="settings-tab-btn" data-tab="display">显示设置</button>
+                    <button class="settings-tab-btn" data-tab="data">数据管理</button>
                 </div>
-
-                <div class="setting-group">
-                    <h3>Google Cloud TTS 配置</h3>
-                    
-                    <label for="googleCloudApiKey">Google Cloud API Key：</label>
-                    <textarea id="googleCloudApiKey" placeholder="输入你的Google Cloud API Key" rows="3"></textarea>
-                    
-                    <div class="button-container">
-                        <button id="saveGoogleCloudBtn" class="btn secondary">保存Google Cloud配置</button>
-                        <button id="testGoogleCloudBtn" class="btn primary">测试Google Cloud TTS</button>
-                    </div>
-                    
-                    <div class="api-status">
-                        <p><strong>Google Cloud状态：</strong></p>
-                        <div id="googleCloudStatus">未配置</div>
-                    </div>
-                </div>
-
-                <div class="setting-group">
-                    <h3>自定义提示词</h3>
-                    <label for="wordPrompt">单词解释提示词：</label>
-                    <textarea id="wordPrompt" placeholder="用于解释单词的AI提示词"></textarea>
-                    
-                    <label for="sentencePrompt">句子分析提示词：</label>
-                    <textarea id="sentencePrompt" placeholder="用于分析句子的AI提示词"></textarea>
-                    
-                    <button id="savePromptsBtn" class="btn secondary">保存提示词</button>
-                </div>
-
-                <div class="setting-group">
-                    <h3>Google Cloud TTS 语音设置</h3>
-                    
-                    <label for="ttsVoice">语音选择：</label>
-                    <select id="ttsVoice">
-                        <option value="en-US-Standard-A">美式英语 - 女声A</option>
-                        <option value="en-US-Standard-B">美式英语 - 男声B</option>
-                        <option value="en-US-Standard-C" selected>美式英语 - 女声C</option>
-                        <option value="en-US-Standard-D">美式英语 - 男声D</option>
-                        <option value="en-US-Standard-E">美式英语 - 女声E</option>
-                        <option value="en-US-Standard-F">美式英语 - 女声F</option>
-                        <option value="en-US-Standard-G">美式英语 - 女声G</option>
-                        <option value="en-US-Standard-H">美式英语 - 女声H</option>
-                        <option value="en-US-Standard-I">美式英语 - 男声I</option>
-                        <option value="en-US-Standard-J">美式英语 - 男声J</option>
-                        <option value="en-GB-Standard-A">英式英语 - 女声A</option>
-                        <option value="en-GB-Standard-B">英式英语 - 男声B</option>
-                        <option value="en-GB-Standard-C">英式英语 - 女声C</option>
-                        <option value="en-GB-Standard-D">英式英语 - 男声D</option>
-                        <option value="en-GB-Standard-F">英式英语 - 女声F</option>
-                        <option value="en-GB-Standard-G">英式英语 - 女声G</option>
-                        <option value="en-GB-Standard-H">英式英语 - 女声H</option>
-                        <option value="en-GB-Standard-I">英式英语 - 男声I</option>
-                        <option value="en-GB-Standard-J">英式英语 - 男声J</option>
-                    </select>
-                    
-                    <label for="ttsSpeed">语速：</label>
-                    <select id="ttsSpeed">
-                        <option value="0.5">0.5x - 很慢</option>
-                        <option value="0.75">0.75x - 慢</option>
-                        <option value="0.9">0.9x - 稍慢</option>
-                        <option value="1.0" selected>1.0x - 正常</option>
-                        <option value="1.25">1.25x - 稍快</option>
-                        <option value="1.5">1.5x - 快</option>
-                        <option value="2.0">2.0x - 很快</option>
-                    </select>
-                    
-                    <label for="ttsPitch">音调：</label>
-                    <select id="ttsPitch">
-                        <option value="-20.0">-20.0 - 很低</option>
-                        <option value="-10.0">-10.0 - 低</option>
-                        <option value="0.0" selected>0.0 - 正常</option>
-                        <option value="10.0">10.0 - 高</option>
-                        <option value="20.0">20.0 - 很高</option>
-                    </select>
-                    
-                    <div class="button-container">
-                        <button id="saveTTSBtn" class="btn secondary">保存Google Cloud TTS设置</button>
-                        <button id="testTTSBtn" class="btn primary">测试Google Cloud TTS发音</button>
-                    </div>
-                </div>
-
-                <div class="setting-group">
-                    <h3>阅读界面设置</h3>
-                    <label for="fontSize">字体大小：</label>
-                    <input type="range" id="fontSize" min="12" max="24" value="16">
-                    <span id="fontSizeValue">16px</span>
-                    <div>
-                        <button id="saveFontBtn" class="btn secondary">保存字体设置</button>
-                    </div>
-                </div>
-
-                <div class="setting-group">
-                    <h3>多端同步设置</h3>
-                    <p class="section-description">通过 Supabase 实现多设备数据同步</p>
-                    
-                    <div class="sync-config">
-                        <label for="supabaseUrl">Supabase 项目 URL：</label>
-                        <input type="text" id="supabaseUrl" placeholder="https://xxxxx.supabase.co">
+                
+                <!-- API配置标签页 -->
+                <div id="settings-api" class="settings-tab-content active">
+                    <div class="setting-group">
+                        <h3>Google AI Studio (Gemini)</h3>
+                        <label for="geminiApiKey">API Key：</label>
+                        <textarea id="geminiApiKey" placeholder="输入你的Google AI Studio API Key"></textarea>
                         
-                        <label for="supabaseKey">Supabase Anon Key：</label>
-                        <textarea id="supabaseKey" placeholder="输入你的 Supabase Anon Key" rows="3"></textarea>
+                        <button id="saveApiBtn" class="btn secondary">保存API配置</button>
+                        <div class="api-status">
+                            <p><strong>当前状态：</strong></p>
+                            <div id="apiStatus">未配置API</div>
+                        </div>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <h3>自定义提示词</h3>
+                        <label for="wordPrompt">单词解释提示词：</label>
+                        <textarea id="wordPrompt" placeholder="用于解释单词的AI提示词"></textarea>
                         
-                        <label for="syncSecret">同步密钥（多设备共享）：</label>
-                        <input type="text" id="syncSecret" placeholder="输入一个密钥，所有设备使用相同密钥即可同步">
-                        <small style="color: #666;">提示：在所有设备上输入相同的密钥即可实现多设备同步</small>
+                        <label for="sentencePrompt">句子分析提示词：</label>
+                        <textarea id="sentencePrompt" placeholder="用于分析句子的AI提示词"></textarea>
+                        
+                        <button id="savePromptsBtn" class="btn secondary">保存提示词</button>
+                    </div>
+                </div>
+
+                <!-- 多端同步标签页 -->
+                <div id="settings-sync" class="settings-tab-content">
+                    <div class="setting-group">
+                        <h3>Supabase 同步配置</h3>
+                        <p class="section-description">通过 Supabase 实现多设备数据同步</p>
+                        
+                        <div class="sync-config">
+                            <label for="supabaseUrl">Supabase 项目 URL：</label>
+                            <input type="text" id="supabaseUrl" placeholder="https://xxxxx.supabase.co">
+                            
+                            <label for="supabaseKey">Supabase Anon Key：</label>
+                            <textarea id="supabaseKey" placeholder="输入你的 Supabase Anon Key" rows="3"></textarea>
+                            
+                            <label for="syncSecret">同步密钥（多设备共享）：</label>
+                            <input type="text" id="syncSecret" placeholder="输入一个密钥，所有设备使用相同密钥即可同步">
+                            <small style="color: #666;">提示：在所有设备上输入相同的密钥即可实现多设备同步</small>
+                            
+                            <div class="button-container">
+                                <button id="initSyncBtn" class="btn primary">初始化同步</button>
+                                <button id="testSyncBtn" class="btn secondary" disabled>测试连接</button>
+                            </div>
+                        </div>
+                        
+                        <div class="sync-status">
+                            <h4>同步状态</h4>
+                            <div id="syncStatusInfo">
+                                <p>状态：<span id="syncState">未初始化</span></p>
+                                <p>最后同步：<span id="lastSyncTime">从未</span></p>
+                                <p>离线队列：<span id="offlineQueueCount">0</span> 项</p>
+                            </div>
+                            
+                            <div class="sync-controls">
+                                <button id="manualSyncBtn" class="btn primary" disabled>立即同步</button>
+                                <button id="syncFromCloudBtn" class="btn secondary" disabled>从云端恢复</button>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="autoSyncToggle" checked>
+                                    启用自动同步（每30秒）
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div id="syncMessage" class="sync-message"></div>
+                    </div>
+                </div>
+                
+                <!-- 语音设置标签页 -->
+                <div id="settings-voice" class="settings-tab-content">
+                    <div class="setting-group">
+                        <h3>Google Cloud TTS 配置</h3>
+                        
+                        <label for="googleCloudApiKey">Google Cloud API Key：</label>
+                        <textarea id="googleCloudApiKey" placeholder="输入你的Google Cloud API Key" rows="3"></textarea>
                         
                         <div class="button-container">
-                            <button id="initSyncBtn" class="btn primary">初始化同步</button>
-                            <button id="testSyncBtn" class="btn secondary" disabled>测试连接</button>
-                        </div>
-                    </div>
-                    
-                    <div class="sync-status">
-                        <h4>同步状态</h4>
-                        <div id="syncStatusInfo">
-                            <p>状态：<span id="syncState">未初始化</span></p>
-                            <p>最后同步：<span id="lastSyncTime">从未</span></p>
-                            <p>离线队列：<span id="offlineQueueCount">0</span> 项</p>
+                            <button id="saveGoogleCloudBtn" class="btn secondary">保存Google Cloud配置</button>
+                            <button id="testGoogleCloudBtn" class="btn primary">测试Google Cloud TTS</button>
                         </div>
                         
-                        <div class="sync-controls">
-                            <button id="manualSyncBtn" class="btn primary" disabled>立即同步</button>
-                            <button id="syncFromCloudBtn" class="btn secondary" disabled>从云端恢复</button>
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="autoSyncToggle" checked>
-                                启用自动同步（每30秒）
-                            </label>
+                        <div class="api-status">
+                            <p><strong>Google Cloud状态：</strong></p>
+                            <div id="googleCloudStatus">未配置</div>
                         </div>
                     </div>
-                    
-                    <div id="syncMessage" class="sync-message"></div>
-                </div>
 
-                <div class="setting-group">
-                    <h3>数据导出/导入</h3>
-                    <p class="section-description">导出或导入文章数据，包括标注的重点词句和对应解释</p>
-                    
-                    <div class="export-section">
-                        <h4>📤 导出数据</h4>
-                        <label for="exportArticleSelect">选择要导出的文章：</label>
-                        <select id="exportArticleSelect">
-                            <option value="">请先加载文章列表</option>
+                    <div class="setting-group">
+                        <h3>Google Cloud TTS 语音设置</h3>
+                        
+                        <label for="ttsVoice">语音选择：</label>
+                        <select id="ttsVoice">
+                            <option value="en-US-Standard-A">美式英语 - 女声A</option>
+                            <option value="en-US-Standard-B">美式英语 - 男声B</option>
+                            <option value="en-US-Standard-C" selected>美式英语 - 女声C</option>
+                            <option value="en-US-Standard-D">美式英语 - 男声D</option>
+                            <option value="en-US-Standard-E">美式英语 - 女声E</option>
+                            <option value="en-US-Standard-F">美式英语 - 女声F</option>
+                            <option value="en-US-Standard-G">美式英语 - 女声G</option>
+                            <option value="en-US-Standard-H">美式英语 - 女声H</option>
+                            <option value="en-US-Standard-I">美式英语 - 男声I</option>
+                            <option value="en-US-Standard-J">美式英语 - 男声J</option>
+                            <option value="en-GB-Standard-A">英式英语 - 女声A</option>
+                            <option value="en-GB-Standard-B">英式英语 - 男声B</option>
+                            <option value="en-GB-Standard-C">英式英语 - 女声C</option>
+                            <option value="en-GB-Standard-D">英式英语 - 男声D</option>
+                            <option value="en-GB-Standard-F">英式英语 - 女声F</option>
+                            <option value="en-GB-Standard-G">英式英语 - 女声G</option>
+                            <option value="en-GB-Standard-H">英式英语 - 女声H</option>
+                            <option value="en-GB-Standard-I">英式英语 - 男声I</option>
+                            <option value="en-GB-Standard-J">英式英语 - 男声J</option>
                         </select>
+                        
+                        <label for="ttsSpeed">语速：</label>
+                        <select id="ttsSpeed">
+                            <option value="0.5">0.5x - 很慢</option>
+                            <option value="0.75">0.75x - 慢</option>
+                            <option value="0.9">0.9x - 稍慢</option>
+                            <option value="1.0" selected>1.0x - 正常</option>
+                            <option value="1.25">1.25x - 稍快</option>
+                            <option value="1.5">1.5x - 快</option>
+                            <option value="2.0">2.0x - 很快</option>
+                        </select>
+                        
+                        <label for="ttsPitch">音调：</label>
+                        <select id="ttsPitch">
+                            <option value="-20.0">-20.0 - 很低</option>
+                            <option value="-10.0">-10.0 - 低</option>
+                            <option value="0.0" selected>0.0 - 正常</option>
+                            <option value="10.0">10.0 - 高</option>
+                            <option value="20.0">20.0 - 很高</option>
+                        </select>
+                        
                         <div class="button-container">
-                            <button id="exportSingleBtn" class="btn primary">导出单篇文章</button>
-                            <button id="exportAllBtn" class="btn secondary">导出所有文章</button>
+                            <button id="saveTTSBtn" class="btn secondary">保存语音设置</button>
+                            <button id="testTTSBtn" class="btn primary">测试发音</button>
                         </div>
                     </div>
-                    
-                    <div class="import-section">
-                        <h4>📥 导入数据</h4>
-                        <input type="file" id="importFileInput" accept=".json" style="display: none;">
-                        <div class="button-container">
-                            <button id="selectImportFileBtn" class="btn primary">选择JSON文件</button>
-                            <span id="importFileName" class="file-name"></span>
+                </div>
+                
+                <!-- 显示设置标签页 -->
+                <div id="settings-display" class="settings-tab-content">
+                    <div class="setting-group">
+                        <h3>阅读界面设置</h3>
+                        <label for="fontSize">字体大小：</label>
+                        <input type="range" id="fontSize" min="12" max="24" value="16">
+                        <span id="fontSizeValue">16px</span>
+                        <div>
+                            <button id="saveFontBtn" class="btn secondary">保存字体设置</button>
                         </div>
-                        <div class="import-options">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="overwriteExisting" checked>
-                                覆盖已存在的文章
-                            </label>
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="generateNewId">
-                                为重复文章生成新ID
-                            </label>
+                    </div>
+                </div>
+
+                <!-- 数据管理标签页 -->
+                <div id="settings-data" class="settings-tab-content">
+                    <div class="setting-group">
+                        <h3>📋 设置配置</h3>
+                        <p class="section-description">导出或导入应用设置配置，方便多设备间同步设置</p>
+                        
+                        <div class="settings-export-section">
+                            <h4>📤 导出设置</h4>
+                            <p>导出当前所有设置配置到 JSON 文件</p>
+                            <button id="exportSettingsBtn" class="btn primary">导出设置配置</button>
                         </div>
-                        <button id="importDataBtn" class="btn secondary" disabled>开始导入</button>
-                        <div id="importStatus" class="import-status"></div>
+                        
+                        <div class="settings-import-section">
+                            <h4>📥 导入设置</h4>
+                            <input type="file" id="importSettingsFileInput" accept=".json" style="display: none;">
+                            <div class="button-container">
+                                <button id="selectSettingsFileBtn" class="btn primary">选择设置文件</button>
+                                <span id="settingsFileName" class="file-name"></span>
+                            </div>
+                            <div class="import-options">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="overwriteSettings" checked>
+                                    覆盖已有设置
+                                </label>
+                            </div>
+                            <button id="importSettingsBtn" class="btn secondary" disabled>开始导入设置</button>
+                            <div id="settingsImportStatus" class="import-status"></div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h3>📚 文章数据</h3>
+                        <p class="section-description">导出或导入文章数据，包括标注的重点词句和对应解释</p>
+                        
+                        <div class="export-section">
+                            <h4>📤 导出数据</h4>
+                            <label for="exportArticleSelect">选择要导出的文章：</label>
+                            <select id="exportArticleSelect">
+                                <option value="">请先加载文章列表</option>
+                            </select>
+                            <div class="button-container">
+                                <button id="exportSingleBtn" class="btn primary">导出单篇文章</button>
+                                <button id="exportAllBtn" class="btn secondary">导出所有文章</button>
+                            </div>
+                        </div>
+                        
+                        <div class="import-section">
+                            <h4>📥 导入数据</h4>
+                            <input type="file" id="importFileInput" accept=".json" style="display: none;">
+                            <div class="button-container">
+                                <button id="selectImportFileBtn" class="btn primary">选择JSON文件</button>
+                                <span id="importFileName" class="file-name"></span>
+                            </div>
+                            <div class="import-options">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="overwriteExisting" checked>
+                                    覆盖已存在的文章
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="generateNewId">
+                                    为重复文章生成新ID
+                                </label>
+                            </div>
+                            <button id="importDataBtn" class="btn secondary" disabled>开始导入</button>
+                            <div id="importStatus" class="import-status"></div>
+                        </div>
                     </div>
                 </div>
             </div>

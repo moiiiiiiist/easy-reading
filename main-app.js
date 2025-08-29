@@ -93,7 +93,16 @@ class MainApp extends BaseApp {
             manualSyncBtn: document.getElementById('manualSyncBtn'),
             syncFromCloudBtn: document.getElementById('syncFromCloudBtn'),
             autoSyncToggle: document.getElementById('autoSyncToggle'),
-            syncMessage: document.getElementById('syncMessage')
+            syncMessage: document.getElementById('syncMessage'),
+            
+            // 设置导出/导入
+            exportSettingsBtn: document.getElementById('exportSettingsBtn'),
+            importSettingsFileInput: document.getElementById('importSettingsFileInput'),
+            selectSettingsFileBtn: document.getElementById('selectSettingsFileBtn'),
+            settingsFileName: document.getElementById('settingsFileName'),
+            overwriteSettings: document.getElementById('overwriteSettings'),
+            importSettingsBtn: document.getElementById('importSettingsBtn'),
+            settingsImportStatus: document.getElementById('settingsImportStatus')
         };
     }
 
@@ -105,6 +114,7 @@ class MainApp extends BaseApp {
         this.audioManager.setGoogleAPI(this.googleAPI);
         
         this.bindEvents();
+        this.initSettingsTabs();
         this.loadSettings();
         this.loadCurrentArticle();
         
@@ -160,6 +170,12 @@ class MainApp extends BaseApp {
         this.elements.manualSyncBtn.addEventListener('click', () => this.manualSync());
         this.elements.syncFromCloudBtn.addEventListener('click', () => this.syncFromCloud());
         this.elements.autoSyncToggle.addEventListener('change', (e) => this.toggleAutoSync(e.target.checked));
+        
+        // 设置导出/导入事件
+        this.elements.exportSettingsBtn.addEventListener('click', () => this.exportSettings());
+        this.elements.selectSettingsFileBtn.addEventListener('click', () => this.elements.importSettingsFileInput.click());
+        this.elements.importSettingsFileInput.addEventListener('change', (e) => this.handleSettingsFileSelect(e));
+        this.elements.importSettingsBtn.addEventListener('click', () => this.importSettings());
     }
 
     /**
@@ -1137,6 +1153,212 @@ class MainApp extends BaseApp {
         setTimeout(() => {
             messageEl.classList.remove('show');
         }, 3000);
+    }
+    
+    /**
+     * 初始化设置标签页
+     */
+    initSettingsTabs() {
+        // 获取所有标签按钮
+        const tabBtns = document.querySelectorAll('.settings-tab-btn');
+        const tabContents = document.querySelectorAll('.settings-tab-content');
+        
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetTab = btn.getAttribute('data-tab');
+                
+                // 移除所有活动状态
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                // 激活当前标签
+                btn.classList.add('active');
+                const targetContent = document.getElementById(`settings-${targetTab}`);
+                if (targetContent) {
+                    targetContent.classList.add('active');
+                }
+            });
+        });
+    }
+    
+    /**
+     * 导出设置配置
+     */
+    async exportSettings() {
+        try {
+            Utils.setLoading(this.elements.exportSettingsBtn, true);
+            
+            // 收集所有设置数据
+            const settings = {
+                metadata: {
+                    appName: '轻松阅读',
+                    exportType: 'settings',
+                    version: '1.0.0',
+                    exportDate: new Date().toISOString(),
+                    description: '应用设置配置文件'
+                },
+                settings: {
+                    // API 配置
+                    geminiApiKey: this.storage.get(this.storage.keys.GEMINI_API_KEY) || '',
+                    googleCloudApiKey: this.storage.get(this.storage.keys.GOOGLE_CLOUD_API_KEY) || '',
+                    
+                    // 提示词设置
+                    prompts: this.storage.get(this.storage.keys.PROMPTS) || {},
+                    
+                    // TTS 设置
+                    ttsSettings: this.storage.get(this.storage.keys.TTS_SETTINGS) || {},
+                    
+                    // 显示设置
+                    fontSize: this.storage.get(this.storage.keys.FONT_SIZE) || 16,
+                    
+                    // Supabase 同步配置
+                    supabaseConfig: localStorage.getItem('supabaseConfig') ? JSON.parse(localStorage.getItem('supabaseConfig')) : null,
+                    
+                    // 自动同步设置
+                    autoSyncEnabled: localStorage.getItem('autoSyncEnabled') === 'true'
+                }
+            };
+            
+            // 创建文件名
+            const timestamp = new Date().toISOString().slice(0, 10);
+            const fileName = `reading-app-settings-${timestamp}.json`;
+            
+            // 下载文件
+            const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            Utils.showToast('设置配置已导出', 'success');
+            
+        } catch (error) {
+            console.error('导出设置失败:', error);
+            Utils.showToast('导出设置失败：' + error.message, 'error');
+        } finally {
+            Utils.setLoading(this.elements.exportSettingsBtn, false);
+        }
+    }
+    
+    /**
+     * 处理设置文件选择
+     */
+    handleSettingsFileSelect(event) {
+        const file = event.target.files[0];
+        if (file) {
+            this.elements.settingsFileName.textContent = file.name;
+            this.elements.importSettingsBtn.disabled = false;
+        } else {
+            this.elements.settingsFileName.textContent = '';
+            this.elements.importSettingsBtn.disabled = true;
+        }
+    }
+    
+    /**
+     * 导入设置配置
+     */
+    async importSettings() {
+        const file = this.elements.importSettingsFileInput.files[0];
+        if (!file) {
+            Utils.showToast('请先选择设置文件', 'error');
+            return;
+        }
+        
+        try {
+            Utils.setLoading(this.elements.importSettingsBtn, true);
+            
+            // 读取文件
+            const fileContent = await this.readFileAsText(file);
+            const settingsData = JSON.parse(fileContent);
+            
+            // 验证文件格式
+            if (!settingsData.metadata || settingsData.metadata.exportType !== 'settings') {
+                throw new Error('无效的设置文件格式');
+            }
+            
+            const settings = settingsData.settings;
+            const overwrite = this.elements.overwriteSettings.checked;
+            
+            let importedCount = 0;
+            
+            // 导入 API 配置
+            if (settings.geminiApiKey && (overwrite || !this.storage.get(this.storage.keys.GEMINI_API_KEY))) {
+                this.storage.set(this.storage.keys.GEMINI_API_KEY, settings.geminiApiKey);
+                importedCount++;
+            }
+            
+            if (settings.googleCloudApiKey && (overwrite || !this.storage.get(this.storage.keys.GOOGLE_CLOUD_API_KEY))) {
+                this.storage.set(this.storage.keys.GOOGLE_CLOUD_API_KEY, settings.googleCloudApiKey);
+                importedCount++;
+            }
+            
+            // 导入提示词
+            if (settings.prompts && (overwrite || !this.storage.get(this.storage.keys.PROMPTS))) {
+                this.storage.set(this.storage.keys.PROMPTS, settings.prompts);
+                importedCount++;
+            }
+            
+            // 导入 TTS 设置
+            if (settings.ttsSettings && (overwrite || !this.storage.get(this.storage.keys.TTS_SETTINGS))) {
+                this.storage.set(this.storage.keys.TTS_SETTINGS, settings.ttsSettings);
+                importedCount++;
+            }
+            
+            // 导入显示设置
+            if (settings.fontSize && (overwrite || !this.storage.get(this.storage.keys.FONT_SIZE))) {
+                this.storage.set(this.storage.keys.FONT_SIZE, settings.fontSize);
+                importedCount++;
+            }
+            
+            // 导入 Supabase 配置
+            if (settings.supabaseConfig && (overwrite || !localStorage.getItem('supabaseConfig'))) {
+                localStorage.setItem('supabaseConfig', JSON.stringify(settings.supabaseConfig));
+                importedCount++;
+            }
+            
+            // 导入自动同步设置
+            if (typeof settings.autoSyncEnabled === 'boolean' && (overwrite || !localStorage.getItem('autoSyncEnabled'))) {
+                localStorage.setItem('autoSyncEnabled', settings.autoSyncEnabled.toString());
+                importedCount++;
+            }
+            
+            // 显示导入结果
+            this.elements.settingsImportStatus.className = 'import-status show success';
+            this.elements.settingsImportStatus.textContent = `成功导入 ${importedCount} 项设置配置`;
+            
+            // 重新加载设置到界面
+            this.loadSettings();
+            
+            // 重新加载同步配置
+            this.loadSyncConfig();
+            
+            Utils.showToast(`设置导入成功，共导入 ${importedCount} 项配置`, 'success');
+            
+            // 提示重启应用
+            setTimeout(() => {
+                if (confirm('设置已导入，是否刷新页面以应用所有设置？')) {
+                    window.location.reload();
+                }
+            }, 1000);
+            
+        } catch (error) {
+            console.error('导入设置失败:', error);
+            this.elements.settingsImportStatus.className = 'import-status show error';
+            this.elements.settingsImportStatus.textContent = '导入失败：' + error.message;
+            Utils.showToast('导入设置失败：' + error.message, 'error');
+        } finally {
+            Utils.setLoading(this.elements.importSettingsBtn, false);
+            
+            // 清空文件选择
+            this.elements.importSettingsFileInput.value = '';
+            this.elements.settingsFileName.textContent = '';
+            this.elements.importSettingsBtn.disabled = true;
+        }
     }
 }
 
