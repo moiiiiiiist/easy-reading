@@ -158,6 +158,44 @@
                         <button id="saveFontBtn" class="btn secondary">保存字体设置</button>
                     </div>
                 </div>
+
+                <div class="setting-group">
+                    <h3>数据导出/导入</h3>
+                    <p class="section-description">导出或导入文章数据，包括标注的重点词句和对应解释</p>
+                    
+                    <div class="export-section">
+                        <h4>📤 导出数据</h4>
+                        <label for="exportArticleSelect">选择要导出的文章：</label>
+                        <select id="exportArticleSelect">
+                            <option value="">请先加载文章列表</option>
+                        </select>
+                        <div class="button-container">
+                            <button id="exportSingleBtn" class="btn primary">导出单篇文章</button>
+                            <button id="exportAllBtn" class="btn secondary">导出所有文章</button>
+                        </div>
+                    </div>
+                    
+                    <div class="import-section">
+                        <h4>📥 导入数据</h4>
+                        <input type="file" id="importFileInput" accept=".json" style="display: none;">
+                        <div class="button-container">
+                            <button id="selectImportFileBtn" class="btn primary">选择JSON文件</button>
+                            <span id="importFileName" class="file-name"></span>
+                        </div>
+                        <div class="import-options">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="overwriteExisting" checked>
+                                覆盖已存在的文章
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="generateNewId">
+                                为重复文章生成新ID
+                            </label>
+                        </div>
+                        <button id="importDataBtn" class="btn secondary" disabled>开始导入</button>
+                        <div id="importStatus" class="import-status"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

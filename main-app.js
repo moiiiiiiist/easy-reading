@@ -64,7 +64,19 @@ class MainApp extends BaseApp {
             testTTSBtn: document.getElementById('testTTSBtn'),
             fontSize: document.getElementById('fontSize'),
             fontSizeValue: document.getElementById('fontSizeValue'),
-            saveFontBtn: document.getElementById('saveFontBtn')
+            saveFontBtn: document.getElementById('saveFontBtn'),
+            
+            // 数据导出/导入
+            exportArticleSelect: document.getElementById('exportArticleSelect'),
+            exportSingleBtn: document.getElementById('exportSingleBtn'),
+            exportAllBtn: document.getElementById('exportAllBtn'),
+            importFileInput: document.getElementById('importFileInput'),
+            selectImportFileBtn: document.getElementById('selectImportFileBtn'),
+            importFileName: document.getElementById('importFileName'),
+            overwriteExisting: document.getElementById('overwriteExisting'),
+            generateNewId: document.getElementById('generateNewId'),
+            importDataBtn: document.getElementById('importDataBtn'),
+            importStatus: document.getElementById('importStatus')
         };
     }
 
@@ -110,6 +122,15 @@ class MainApp extends BaseApp {
         this.elements.fontSize.addEventListener('input', (e) => {
             this.elements.fontSizeValue.textContent = e.target.value + 'px';
         });
+        
+        // 数据导出/导入事件
+        this.elements.exportSingleBtn.addEventListener('click', () => this.exportSingleArticle());
+        this.elements.exportAllBtn.addEventListener('click', () => this.exportAllArticles());
+        this.elements.selectImportFileBtn.addEventListener('click', () => this.elements.importFileInput.click());
+        this.elements.importFileInput.addEventListener('change', (e) => this.handleImportFileSelect(e));
+        this.elements.importDataBtn.addEventListener('click', () => this.importData());
+        this.elements.overwriteExisting.addEventListener('change', () => this.updateImportOptions());
+        this.elements.generateNewId.addEventListener('change', () => this.updateImportOptions());
     }
 
     /**
@@ -150,6 +171,8 @@ class MainApp extends BaseApp {
             this.elements.manageBtn.classList.add('active');
         } else if (sectionId === 'settingsPanel') {
             this.elements.settingsBtn.classList.add('active');
+            // 每次打开设置页面时更新导出文章选项
+            this.updateExportArticleOptions();
         }
     }
 
@@ -566,13 +589,212 @@ class MainApp extends BaseApp {
         super.loadCurrentArticle();
         
         this.updateArticleList();
+        this.updateExportArticleOptions();
         if (this.currentArticle) {
             this.updateArticlePreview();
+        }
+    }
+    
+    /**
+     * 更新导出文章选项
+     */
+    updateExportArticleOptions() {
+        const articles = this.storage.getArticles();
+        const select = this.elements.exportArticleSelect;
+        
+        // 清空选项
+        select.innerHTML = '<option value="">请选择要导出的文章</option>';
+        
+        // 添加文章选项
+        Object.entries(articles).forEach(([id, article]) => {
+            const option = document.createElement('option');
+            option.value = id;
+            option.textContent = article.title;
+            select.appendChild(option);
+        });
+    }
+    
+    /**
+     * 导出单篇文章
+     */
+    exportSingleArticle() {
+        const selectedId = this.elements.exportArticleSelect.value;
+        if (!selectedId) {
+            Utils.showToast('请先选择要导出的文章', 'error');
+            return;
+        }
+        
+        try {
+            const exportData = this.storage.exportArticle(selectedId);
+            if (!exportData) {
+                Utils.showToast('导出失败：文章不存在', 'error');
+                return;
+            }
+            
+            this.downloadJSON(exportData, `article_${exportData.article.title}_${new Date().toISOString().split('T')[0]}.json`);
+            Utils.showToast('文章导出成功', 'success');
+        } catch (error) {
+            console.error('导出文章失败:', error);
+            Utils.showToast('导出失败：' + error.message, 'error');
+        }
+    }
+    
+    /**
+     * 导出所有文章
+     */
+    exportAllArticles() {
+        try {
+            const exportData = this.storage.exportAllArticles();
+            if (exportData.metadata.articleCount === 0) {
+                Utils.showToast('没有可导出的文章', 'error');
+                return;
+            }
+            
+            this.downloadJSON(exportData, `all_articles_${new Date().toISOString().split('T')[0]}.json`);
+            Utils.showToast(`成功导出 ${exportData.metadata.articleCount} 篇文章`, 'success');
+        } catch (error) {
+            console.error('导出所有文章失败:', error);
+            Utils.showToast('导出失败：' + error.message, 'error');
+        }
+    }
+    
+    /**
+     * 下载JSON数据
+     */
+    downloadJSON(data, filename) {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+    
+    /**
+     * 处理导入文件选择
+     */
+    handleImportFileSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        if (!file.name.toLowerCase().endsWith('.json')) {
+            Utils.showToast('请选择JSON格式的文件', 'error');
+            this.elements.importFileInput.value = '';
+            return;
+        }
+        
+        this.elements.importFileName.textContent = file.name;
+        this.elements.importDataBtn.disabled = false;
+        this.selectedImportFile = file;
+    }
+    
+    /**
+     * 导入数据
+     */
+    async importData() {
+        if (!this.selectedImportFile) {
+            Utils.showToast('请先选择要导入的文件', 'error');
+            return;
+        }
+        
+        try {
+            Utils.setLoading(this.elements.importDataBtn, true);
+            this.elements.importStatus.textContent = '正在读取文件...';
+            
+            const fileContent = await this.readFileAsText(this.selectedImportFile);
+            const importData = JSON.parse(fileContent);
+            
+            this.elements.importStatus.textContent = '正在导入数据...';
+            
+            const options = {
+                overwrite: this.elements.overwriteExisting.checked,
+                generateNewId: this.elements.generateNewId.checked
+            };
+            
+            let successCount = 0;
+            let errorCount = 0;
+            let results = [];
+            
+            // 检查是否是单篇文章还是多篇文章
+            if (importData.article) {
+                // 单篇文章
+                const result = this.storage.importArticle(importData, options);
+                results.push(result);
+                if (result.success) successCount++;
+                else errorCount++;
+            } else if (importData.articles) {
+                // 多篇文章
+                for (const [articleId, articleData] of Object.entries(importData.articles)) {
+                    const result = this.storage.importArticle(articleData, options);
+                    results.push(result);
+                    if (result.success) successCount++;
+                    else errorCount++;
+                }
+            } else {
+                throw new Error('无效的导入数据格式');
+            }
+            
+            // 更新界面
+            this.updateArticleList();
+            this.updateExportArticleOptions();
+            
+            // 显示结果
+            let statusMessage = `导入完成：成功 ${successCount} 篇`;
+            if (errorCount > 0) {
+                statusMessage += `，失败 ${errorCount} 篇`;
+            }
+            
+            this.elements.importStatus.innerHTML = statusMessage;
+            
+            if (successCount > 0) {
+                Utils.showToast(statusMessage, 'success');
+            } else {
+                Utils.showToast('导入失败，请检查文件格式', 'error');
+            }
+            
+            // 显示详细结果
+            console.log('导入详细结果:', results);
+            
+        } catch (error) {
+            console.error('导入数据失败:', error);
+            this.elements.importStatus.textContent = '导入失败：' + error.message;
+            Utils.showToast('导入失败：' + error.message, 'error');
+        } finally {
+            Utils.setLoading(this.elements.importDataBtn, false);
+        }
+    }
+    
+    /**
+     * 读取文件为文本
+     */
+    readFileAsText(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = (e) => reject(new Error('文件读取失败'));
+            reader.readAsText(file, 'UTF-8');
+        });
+    }
+    
+    /**
+     * 更新导入选项
+     */
+    updateImportOptions() {
+        // 如果选择覆盖现有文章，则禁用生成新ID选项
+        if (this.elements.overwriteExisting.checked) {
+            this.elements.generateNewId.checked = false;
+            this.elements.generateNewId.disabled = true;
+        } else {
+            this.elements.generateNewId.disabled = false;
         }
     }
 }
 
 // 初始化应用
 document.addEventListener('DOMContentLoaded', () => {
-    window.mainApp = new MainApp();
+    window.app = new MainApp();
+    window.mainApp = window.app; // 保持向后兼容
 });

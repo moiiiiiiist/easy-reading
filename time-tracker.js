@@ -568,6 +568,31 @@ class TimeTracker {
     }
     
     /**
+     * 导入文章统计数据
+     * @param {string} articleId - 文章ID
+     * @param {Object} stats - 统计数据
+     */
+    importArticleStats(articleId, stats) {
+        if (!articleId || !stats) return;
+        
+        try {
+            // 恢复统计数据
+            this.articleStats[articleId] = {
+                totalTime: stats.totalTime || 0,
+                lastOpened: stats.lastOpened,
+                openCount: stats.openCount || 0,
+                weeklyTime: stats.weeklyTime || {},
+                dailyTime: stats.dailyTime || {}
+            };
+            
+            this.saveArticleStats();
+            console.log(`[时间统计] 成功导入文章 ${articleId} 的统计数据`);
+        } catch (error) {
+            console.error('[时间统计] 导入文章统计数据失败:', error);
+        }
+    }
+    
+    /**
      * 获取最近7天的学习记录
      */
     getRecentWeekData() {

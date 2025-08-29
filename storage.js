@@ -472,6 +472,211 @@ class StorageManager {
     }
 
     /**
+     * 导出单篇文章的完整数据
+     * @param {string} articleId - 文章ID
+     * @returns {Object|null} 文章完整数据
+     */
+    exportArticle(articleId) {
+        const article = this.getArticle(articleId);
+        if (!article) {
+            console.error('文章不存在:', articleId);
+            return null;
+        }
+
+        // 收集所有相关数据
+        const favorites = this.getFavorites(articleId);
+        const highlightedWords = this.getHighlightedWords(articleId);
+        const explanations = this.getExplanations(articleId);
+        
+        // 转换explanations Map为数组格式
+        const explanationsArray = Array.from(explanations.entries()).map(([key, value]) => ({
+            key,
+            ...value
+        }));
+
+        // 获取时间统计数据
+        let articleStats = null;
+        try {
+            const timeTracker = window.app?.timeTracker;
+            if (timeTracker) {
+                articleStats = timeTracker.getArticleStats(articleId);
+            }
+        } catch (error) {
+            console.warn('无法获取时间统计数据:', error);
+        }
+
+        const exportData = {
+            version: "1.0",
+            exportDate: new Date().toISOString(),
+            article: {
+                ...article,
+                id: articleId // 确保ID包含在内
+            },
+            annotations: {
+                favorites,
+                highlightedWords,
+                explanations: explanationsArray
+            },
+            statistics: articleStats,
+            metadata: {
+                exportedBy: 'Story Claude - 轻松阅读',
+                format: 'json',
+                description: '包含文章内容、收藏句子、重点词汇标注和对应解释的完整数据'
+            }
+        };
+
+        return exportData;
+    }
+
+    /**
+     * 导出所有文章数据
+     * @returns {Object} 所有文章的完整数据
+     */
+    exportAllArticles() {
+        const articles = this.getArticles();
+        const articlesData = {};
+        
+        Object.keys(articles).forEach(articleId => {
+            articlesData[articleId] = this.exportArticle(articleId);
+        });
+
+        return {
+            version: "1.0",
+            exportDate: new Date().toISOString(),
+            articles: articlesData,
+            metadata: {
+                exportedBy: 'Story Claude - 轻松阅读',
+                format: 'json',
+                description: '所有文章的完整数据导出',
+                articleCount: Object.keys(articlesData).length
+            }
+        };
+    }
+
+    /**
+     * 导入单篇文章数据
+     * @param {Object} articleData - 文章数据
+     * @param {Object} options - 导入选项
+     * @returns {Object} 导入结果
+     */
+    importArticle(articleData, options = {}) {
+        const { overwrite = false, generateNewId = false } = options;
+        
+        try {
+            // 验证数据格式
+            if (!this.validateArticleData(articleData)) {
+                throw new Error('文章数据格式无效');
+            }
+
+            let articleId = articleData.article.id;
+            const existingArticle = this.getArticle(articleId);
+            
+            // 处理ID冲突
+            if (existingArticle && !overwrite) {
+                if (generateNewId) {
+                    articleId = this.generateArticleId();
+                    articleData.article.id = articleId;
+                } else {
+                    throw new Error('文章已存在，请选择覆盖或生成新ID');
+                }
+            }
+
+            // 导入文章主体
+            const articles = this.getArticles();
+            articles[articleId] = articleData.article;
+            this.saveArticles(articles);
+
+            // 导入标注数据
+            if (articleData.annotations) {
+                // 导入收藏句子
+                if (articleData.annotations.favorites) {
+                    this.saveFavorites(articleId, articleData.annotations.favorites);
+                }
+
+                // 导入高亮词汇
+                if (articleData.annotations.highlightedWords) {
+                    this.saveHighlightedWords(articleId, articleData.annotations.highlightedWords);
+                }
+
+                // 导入解释数据
+                if (articleData.annotations.explanations) {
+                    const explanationsMap = new Map();
+                    articleData.annotations.explanations.forEach(item => {
+                        const { key, ...explanation } = item;
+                        explanationsMap.set(key, explanation);
+                    });
+                    this.saveExplanations(articleId, explanationsMap);
+                }
+            }
+
+            // 导入时间统计数据
+            if (articleData.statistics && window.app?.timeTracker) {
+                try {
+                    window.app.timeTracker.importArticleStats(articleId, articleData.statistics);
+                } catch (error) {
+                    console.warn('时间统计数据导入失败:', error);
+                }
+            }
+
+            return {
+                success: true,
+                articleId,
+                message: `文章 "${articleData.article.title}" 导入成功`,
+                isNewId: generateNewId && existingArticle
+            };
+
+        } catch (error) {
+            console.error('导入文章失败:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * 验证文章数据格式
+     * @param {Object} articleData - 文章数据
+     * @returns {boolean} 是否有效
+     */
+    validateArticleData(articleData) {
+        if (!articleData || typeof articleData !== 'object') {
+            return false;
+        }
+
+        // 验证必需字段
+        const requiredFields = ['version', 'article'];
+        for (const field of requiredFields) {
+            if (!(field in articleData)) {
+                console.error(`缺少必需字段: ${field}`);
+                return false;
+            }
+        }
+
+        // 验证文章数据
+        const article = articleData.article;
+        if (!article.id || !article.title || !article.content || !Array.isArray(article.sentences)) {
+            console.error('文章数据格式不正确');
+            return false;
+        }
+
+        // 验证版本兼容性
+        if (articleData.version !== "1.0") {
+            console.warn(`版本不匹配: ${articleData.version}，可能存在兼容性问题`);
+        }
+
+        return true;
+    }
+
+    /**
+     * 生成新的文章ID
+     * @returns {string} 新的文章ID
+     */
+    generateArticleId() {
+        return 'article_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    /**
      * 清空所有存储数据
      */
     clearAll() {

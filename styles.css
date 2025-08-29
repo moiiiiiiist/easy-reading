@@ -1612,3 +1612,64 @@ nav {
     color: #8e44ad;
     font-weight: 500;
 }
+
+/* 数据导出/导入样式 */
+.section-description {
+    font-size: 14px;
+    color: #7f8c8d;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.export-section, .import-section {
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    background: #fdfdfd;
+}
+
+.export-section h4, .import-section h4 {
+    margin: 0 0 15px 0;
+    color: #2c3e50;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.export-section select {
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.import-options {
+    margin: 15px 0;
+}
+
+.checkbox-label {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: #2c3e50;
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    margin-right: 10px;
+    transform: scale(1.2);
+}
+
+.import-status {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    font-weight: 500;
+    min-height: 20px;
+}
+
+.file-name {
+    margin-left: 10px;
+    font-size: 14px;
+    color: #27ae60;
+    font-weight: 500;
+}
