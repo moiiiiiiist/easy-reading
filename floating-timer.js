@@ -84,6 +84,13 @@ class FloatingTimer {
                         <div class="week-chart" id="weekChart"></div>
                     </div>
                     
+                    <div class="article-stats-section">
+                        <h4>本周文章阅读排行</h4>
+                        <div class="article-ranking" id="articleRanking">
+                            <div class="no-data">暂无阅读数据</div>
+                        </div>
+                    </div>
+                    
                     <div class="timer-actions">
                         <button id="exportDataBtn" class="btn primary">📊 导出数据</button>
                         <button id="resetDataBtn" class="btn secondary">🗑️ 重置数据</button>
@@ -243,6 +250,9 @@ class FloatingTimer {
         
         // 更新最近7天数据
         this.updateWeekChart(stats);
+        
+        // 更新文章阅读排行
+        this.updateArticleRanking();
     }
     
     /**
@@ -333,6 +343,50 @@ class FloatingTimer {
         if (this.floatingBall) {
             this.floatingBall.style.display = 'none';
         }
+    }
+    
+    /**
+     * 更新文章阅读排行
+     */
+    updateArticleRanking() {
+        const rankings = this.timeTracker.getWeeklyArticleRanking();
+        const rankingContainer = this.modal.querySelector('#articleRanking');
+        
+        if (rankings.length === 0) {
+            rankingContainer.innerHTML = '<div class="no-data">本周暂无阅读数据</div>';
+            return;
+        }
+        
+        // 获取文章标题的函数
+        const getArticleTitle = (articleId) => {
+            // 尝试从storage获取文章标题
+            try {
+                if (window.app && window.app.storage) {
+                    const article = window.app.storage.getArticle(articleId);
+                    return article ? article.title : `文章-${articleId.substring(0, 8)}`;
+                }
+                return `文章-${articleId.substring(0, 8)}`;
+            } catch (error) {
+                return `文章-${articleId.substring(0, 8)}`;
+            }
+        };
+        
+        rankingContainer.innerHTML = rankings.map((ranking, index) => {
+            const title = getArticleTitle(ranking.articleId);
+            const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+            
+            return `
+                <div class="ranking-item">
+                    <div class="ranking-position">${medal}</div>
+                    <div class="ranking-info">
+                        <div class="ranking-title">${title}</div>
+                        <div class="ranking-time">
+                            本周: ${ranking.formattedWeekTime} | 总计: ${ranking.formattedTotalTime}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
     
     /**

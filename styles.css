@@ -1531,3 +1531,84 @@ nav {
         transform: rotate(360deg);
     }
 }
+
+/* 文章统计排行样式 */
+.article-stats-section {
+    margin: 20px 0;
+    padding: 20px 0;
+    border-top: 1px solid #eee;
+}
+
+.article-stats-section h4 {
+    margin: 0 0 15px 0;
+    font-size: 16px;
+    color: #2c3e50;
+    text-align: center;
+}
+
+.article-ranking {
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 10px 0;
+}
+
+.ranking-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 10px;
+    margin-bottom: 8px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #3498db;
+    transition: all 0.3s ease;
+}
+
+.ranking-item:hover {
+    background: #e9ecef;
+    transform: translateX(4px);
+}
+
+.ranking-position {
+    font-size: 18px;
+    font-weight: bold;
+    margin-right: 15px;
+    min-width: 35px;
+    text-align: center;
+}
+
+.ranking-info {
+    flex: 1;
+}
+
+.ranking-title {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 4px;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ranking-time {
+    font-size: 12px;
+    color: #7f8c8d;
+}
+
+.no-data {
+    text-align: center;
+    padding: 20px;
+    color: #95a5a6;
+    font-style: italic;
+}
+
+/* 文章元数据样式增强 */
+.article-meta .reading-time {
+    color: #27ae60;
+    font-weight: 500;
+}
+
+.article-meta .last-opened {
+    color: #8e44ad;
+    font-weight: 500;
+}

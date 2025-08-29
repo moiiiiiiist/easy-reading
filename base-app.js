@@ -204,12 +204,19 @@ class BaseApp {
                 articleItem.classList.add('active');
             }
             
+            // 获取文章的阅读统计
+            const articleStats = this.timeTracker ? this.timeTracker.getArticleStats(article.id) : null;
+            const readingTimeHtml = articleStats ? 
+                `<span class="reading-time">📚 ${articleStats.formattedTime}</span> | ` : '';
+            const lastOpenedHtml = articleStats && articleStats.lastOpened ? 
+                `<span class="last-opened">📅 ${articleStats.formattedLastOpened}</span> | ` : '';
+            
             articleItem.innerHTML = `
                 <div class="article-info">
                     <div class="article-title">${article.title}</div>
                     <div class="article-meta">
-                        ${this.splitter.formatStats(article.stats)} | 
-                        ${Utils.formatTime(article.createdAt)}
+                        ${readingTimeHtml}${lastOpenedHtml}${this.splitter.formatStats(article.stats)} | 
+                        创建：${Utils.formatTime(article.createdAt)}
                     </div>
                 </div>
                 <div class="article-actions">

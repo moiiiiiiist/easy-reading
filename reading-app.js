@@ -165,6 +165,13 @@ class ReadingApp extends BaseApp {
         this.sentences = this.currentArticle.sentences;
         this.currentSentenceIndex = 0;
         
+        // 设置当前文章用于时间统计
+        if (this.timeTracker) {
+            this.timeTracker.setCurrentArticle(this.currentArticleId);
+        }
+        
+        console.log(`文章已加载: ${this.sentences.length} 个句子`);
+        
         // 加载保存的解释条数据
         this.loadExplanations();
         

@@ -18,8 +18,14 @@ class TimeTracker {
         // 每日详细记录
         this.dailyRecords = {};
         
+        // 文章级别的统计数据
+        this.articleStats = {};
+        this.currentArticleId = null;
+        this.articleSessionStart = null;
+        
         // 存储键
         this.STORAGE_KEY = 'reading_app_time_data';
+        this.ARTICLE_STATS_KEY = 'reading_app_article_stats';
         
         // 初始化
         this.init();
@@ -142,6 +148,13 @@ class TimeTracker {
             this.weekTime += sessionDuration;
             this.sessionStartTime = now;
             
+            // 更新当前文章的阅读时间
+            if (this.currentArticleId && this.articleSessionStart) {
+                const articleDuration = now - this.articleSessionStart;
+                this.updateArticleTime(this.currentArticleId, articleDuration);
+                this.articleSessionStart = now;
+            }
+            
             console.log(`[时间统计] 更新时间：+${Math.round(sessionDuration/1000)}秒，今日总计：${this.formatTime(this.todayTime)}`);
         }
     }
@@ -207,6 +220,9 @@ class TimeTracker {
         this.weekTime = data.weekTime || 0;
         this.totalReadings = data.totalReadings || 0;
         this.dailyRecords = data.dailyRecords || {};
+        
+        // 加载文章统计数据
+        this.loadArticleStats();
         
         // 检查今日阅读次数
         const today = new Date().toDateString();
@@ -398,6 +414,157 @@ class TimeTracker {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         console.log('[时间统计] 数据导出完成');
+    }
+    
+    /**
+     * 加载文章统计数据
+     */
+    loadArticleStats() {
+        try {
+            const data = localStorage.getItem(this.ARTICLE_STATS_KEY);
+            this.articleStats = data ? JSON.parse(data) : {};
+        } catch (error) {
+            console.error('[时间统计] 加载文章统计失败:', error);
+            this.articleStats = {};
+        }
+    }
+    
+    /**
+     * 保存文章统计数据
+     */
+    saveArticleStats() {
+        try {
+            localStorage.setItem(this.ARTICLE_STATS_KEY, JSON.stringify(this.articleStats));
+        } catch (error) {
+            console.error('[时间统计] 保存文章统计失败:', error);
+        }
+    }
+    
+    /**
+     * 设置当前文章
+     * @param {string} articleId - 文章ID
+     */
+    setCurrentArticle(articleId) {
+        // 如果切换了文章，先保存之前文章的时间
+        if (this.currentArticleId && this.articleSessionStart) {
+            const duration = Date.now() - this.articleSessionStart;
+            this.updateArticleTime(this.currentArticleId, duration);
+        }
+        
+        this.currentArticleId = articleId;
+        this.articleSessionStart = Date.now();
+        
+        // 初始化文章统计
+        if (articleId && !this.articleStats[articleId]) {
+            this.articleStats[articleId] = {
+                totalTime: 0,
+                lastOpened: Date.now(),
+                openCount: 0,
+                weeklyTime: {},
+                dailyTime: {}
+            };
+        }
+        
+        // 更新最后打开时间和打开次数
+        if (articleId) {
+            this.articleStats[articleId].lastOpened = Date.now();
+            this.articleStats[articleId].openCount = (this.articleStats[articleId].openCount || 0) + 1;
+            this.saveArticleStats();
+        }
+    }
+    
+    /**
+     * 更新文章阅读时间
+     * @param {string} articleId - 文章ID
+     * @param {number} duration - 持续时间（毫秒）
+     */
+    updateArticleTime(articleId, duration) {
+        if (!articleId || !this.articleStats[articleId] || duration < 5000) return;
+        
+        const today = new Date().toDateString();
+        const weekKey = this.getWeekKey();
+        
+        // 更新总时间
+        this.articleStats[articleId].totalTime += duration;
+        
+        // 更新每日时间
+        if (!this.articleStats[articleId].dailyTime) {
+            this.articleStats[articleId].dailyTime = {};
+        }
+        this.articleStats[articleId].dailyTime[today] = 
+            (this.articleStats[articleId].dailyTime[today] || 0) + duration;
+        
+        // 更新周时间
+        if (!this.articleStats[articleId].weeklyTime) {
+            this.articleStats[articleId].weeklyTime = {};
+        }
+        this.articleStats[articleId].weeklyTime[weekKey] = 
+            (this.articleStats[articleId].weeklyTime[weekKey] || 0) + duration;
+        
+        this.saveArticleStats();
+    }
+    
+    /**
+     * 获取当前周的键值
+     */
+    getWeekKey() {
+        const now = new Date();
+        const monday = new Date(now);
+        const day = monday.getDay() || 7;
+        monday.setDate(monday.getDate() - day + 1);
+        return monday.toISOString().split('T')[0];
+    }
+    
+    /**
+     * 获取文章的阅读统计
+     * @param {string} articleId - 文章ID
+     */
+    getArticleStats(articleId) {
+        if (!articleId || !this.articleStats[articleId]) {
+            return {
+                totalTime: 0,
+                lastOpened: null,
+                openCount: 0,
+                formattedTime: '0分钟',
+                formattedLastOpened: '从未打开'
+            };
+        }
+        
+        const stats = this.articleStats[articleId];
+        return {
+            ...stats,
+            formattedTime: this.formatTime(stats.totalTime),
+            formattedLastOpened: stats.lastOpened ? 
+                new Date(stats.lastOpened).toLocaleDateString('zh-CN') : '从未打开'
+        };
+    }
+    
+    /**
+     * 获取本周所有文章的阅读时间排名
+     */
+    getWeeklyArticleRanking() {
+        const weekKey = this.getWeekKey();
+        const rankings = [];
+        
+        // 收集所有文章的本周阅读时间
+        for (const [articleId, stats] of Object.entries(this.articleStats)) {
+            const weekTime = (stats.weeklyTime && stats.weeklyTime[weekKey]) || 0;
+            if (weekTime > 0) {
+                rankings.push({
+                    articleId,
+                    weekTime,
+                    totalTime: stats.totalTime,
+                    lastOpened: stats.lastOpened,
+                    formattedWeekTime: this.formatTime(weekTime),
+                    formattedTotalTime: this.formatTime(stats.totalTime)
+                });
+            }
+        }
+        
+        // 按本周阅读时间排序
+        rankings.sort((a, b) => b.weekTime - a.weekTime);
+        
+        return rankings;
     }
     
     /**
