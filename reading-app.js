@@ -328,31 +328,6 @@ class ReadingApp extends BaseApp {
             }
         });
         
-        // 移动端兼容：添加触摸双击处理
-        let touchTimeout = null;
-        let lastTouchTime = 0;
-        
-        element.addEventListener('touchend', (e) => {
-            if (e.target.classList.contains('word')) {
-                const now = Date.now();
-                const timeDiff = now - lastTouchTime;
-                
-                if (timeDiff < 300) {
-                    // 双击
-                    e.stopPropagation();
-                    e.preventDefault();
-                    this.toggleWordHighlight(e.target, element);
-                    clearTimeout(touchTimeout);
-                } else {
-                    // 单击，延迟处理以等待可能的第二次点击
-                    lastTouchTime = now;
-                    touchTimeout = setTimeout(() => {
-                        // 处理单击逻辑（如果需要）
-                    }, 300);
-                }
-            }
-        });
-        
         // 为已高亮单词添加单击事件
         element.addEventListener('click', async (e) => {
             if (e.target.classList.contains('word') && e.target.classList.contains('highlighted')) {
@@ -1110,6 +1085,17 @@ class ReadingApp extends BaseApp {
             const [type, index] = key.split('_');
             if (type === 'word') {
                 this.addExplanationToPanel('word', index, data);
+                
+                // 同时恢复单词的高亮状态（如果DOM中还没有的话）
+                const word = data.word || data.text;
+                if (word) {
+                    const wordElements = document.querySelectorAll(`[data-word="${word}"]`);
+                    wordElements.forEach(element => {
+                        if (!element.classList.contains('highlighted')) {
+                            element.classList.add('highlighted');
+                        }
+                    });
+                }
             } else if (type === 'sentence') {
                 // 恢复句子解释和视觉标识
                 this.addExplanationToPanel('sentence', parseInt(index), data);
