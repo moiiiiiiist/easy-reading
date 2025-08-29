@@ -90,6 +90,11 @@ class MainApp extends BaseApp {
         this.bindEvents();
         this.loadSettings();
         this.loadCurrentArticle();
+        
+        // 确保导出选项在初始化时也更新
+        setTimeout(() => {
+            this.updateExportArticleOptions();
+        }, 500);
     }
 
     /**
@@ -171,8 +176,10 @@ class MainApp extends BaseApp {
             this.elements.manageBtn.classList.add('active');
         } else if (sectionId === 'settingsPanel') {
             this.elements.settingsBtn.classList.add('active');
-            // 每次打开设置页面时更新导出文章选项
-            this.updateExportArticleOptions();
+            // 延迟更新导出选项，确保DOM完全渲染
+            setTimeout(() => {
+                this.updateExportArticleOptions();
+            }, 100);
         }
     }
 
@@ -599,19 +606,37 @@ class MainApp extends BaseApp {
      * 更新导出文章选项
      */
     updateExportArticleOptions() {
-        const articles = this.storage.getArticles();
+        // 确保元素存在
         const select = this.elements.exportArticleSelect;
+        if (!select) {
+            console.warn('导出文章选择框元素不存在');
+            return;
+        }
+
+        const articles = this.storage.getArticles();
         
         // 清空选项
         select.innerHTML = '<option value="">请选择要导出的文章</option>';
+        
+        // 检查是否有文章
+        if (!articles || Object.keys(articles).length === 0) {
+            const option = document.createElement('option');
+            option.value = "";
+            option.textContent = "暂无文章可导出";
+            option.disabled = true;
+            select.appendChild(option);
+            return;
+        }
         
         // 添加文章选项
         Object.entries(articles).forEach(([id, article]) => {
             const option = document.createElement('option');
             option.value = id;
-            option.textContent = article.title;
+            option.textContent = article.title || `文章-${id.substring(0, 8)}`;
             select.appendChild(option);
         });
+        
+        console.log(`[导出选项] 已加载 ${Object.keys(articles).length} 篇文章`);
     }
     
     /**

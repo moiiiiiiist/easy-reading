@@ -29,6 +29,15 @@ class ReadingApp extends BaseApp {
         
         // 初始化应用
         this.init();
+        
+        // 添加页面完全加载后的高亮恢复机制（移动端兼容）
+        if (document.readyState === 'complete') {
+            setTimeout(() => this.ensureHighlightStates(), 300);
+        } else {
+            window.addEventListener('load', () => {
+                setTimeout(() => this.ensureHighlightStates(), 300);
+            });
+        }
     }
 
     /**
@@ -122,6 +131,15 @@ class ReadingApp extends BaseApp {
         
         // 窗口大小变化事件
         window.addEventListener('resize', Utils.throttle(() => this.handleResize(), 100));
+        
+        // 页面可见性变化时重新确保高亮状态（移动端兼容）
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && this.currentArticleId) {
+                setTimeout(() => {
+                    this.ensureHighlightStates();
+                }, 200);
+            }
+        });
     }
 
     /**
@@ -247,8 +265,10 @@ class ReadingApp extends BaseApp {
             container.appendChild(document.createElement('br'));
         }
         
-        // 应用已保存的高亮状态
-        this.applyHighlightStates();
+        // 应用已保存的高亮状态（延迟执行以确保DOM渲染完成）
+        setTimeout(() => {
+            this.applyHighlightStates();
+        }, 50);
     }
 
     /**
@@ -305,6 +325,31 @@ class ReadingApp extends BaseApp {
                 e.stopPropagation();
                 // 传递单词元素和所在的句子元素
                 this.toggleWordHighlight(e.target, element);
+            }
+        });
+        
+        // 移动端兼容：添加触摸双击处理
+        let touchTimeout = null;
+        let lastTouchTime = 0;
+        
+        element.addEventListener('touchend', (e) => {
+            if (e.target.classList.contains('word')) {
+                const now = Date.now();
+                const timeDiff = now - lastTouchTime;
+                
+                if (timeDiff < 300) {
+                    // 双击
+                    e.stopPropagation();
+                    e.preventDefault();
+                    this.toggleWordHighlight(e.target, element);
+                    clearTimeout(touchTimeout);
+                } else {
+                    // 单击，延迟处理以等待可能的第二次点击
+                    lastTouchTime = now;
+                    touchTimeout = setTimeout(() => {
+                        // 处理单击逻辑（如果需要）
+                    }, 300);
+                }
             }
         });
         
@@ -649,22 +694,91 @@ class ReadingApp extends BaseApp {
      * 应用高亮状态
      */
     applyHighlightStates() {
+        console.log('[高亮恢复] 开始应用高亮状态');
+        
         // 应用单词高亮
         const highlightedWords = this.storage.getHighlightedWords(this.currentArticleId);
+        console.log(`[高亮恢复] 需要恢复 ${highlightedWords.length} 个高亮词汇`);
+        
+        let appliedCount = 0;
         highlightedWords.forEach(item => {
-            document.querySelectorAll(`[data-word="${item.word}"]`).forEach(el => {
-                el.classList.add('highlighted');
+            const elements = document.querySelectorAll(`[data-word="${item.word}"]`);
+            console.log(`[高亮恢复] 单词 "${item.word}" 找到 ${elements.length} 个元素`);
+            
+            elements.forEach(el => {
+                if (!el.classList.contains('highlighted')) {
+                    el.classList.add('highlighted');
+                    appliedCount++;
+                }
             });
         });
         
+        console.log(`[高亮恢复] 成功应用 ${appliedCount} 个单词高亮`);
+        
         // 应用句子收藏状态
         const favorites = this.storage.getFavorites(this.currentArticleId);
+        console.log(`[高亮恢复] 需要恢复 ${favorites.length} 个收藏句子`);
+        
+        let favoriteCount = 0;
         favorites.forEach(item => {
             const sentenceElement = document.querySelector(`[data-index="${item.index}"]`);
-            if (sentenceElement) {
+            if (sentenceElement && !sentenceElement.classList.contains('favorited')) {
                 sentenceElement.classList.add('favorited');
+                favoriteCount++;
             }
         });
+        
+        console.log(`[高亮恢复] 成功应用 ${favoriteCount} 个句子收藏状态`);
+        
+        // 如果没有成功应用任何高亮，可能是DOM还没准备好，再次尝试
+        if (appliedCount === 0 && highlightedWords.length > 0) {
+            console.warn('[高亮恢复] 首次应用失败，0.2秒后重试');
+            setTimeout(() => {
+                this.applyHighlightStates();
+            }, 200);
+        }
+    }
+    
+    /**
+     * 确保高亮状态被正确应用（移动端兼容方法）
+     */
+    ensureHighlightStates() {
+        if (!this.currentArticleId) return;
+        
+        console.log('[移动端兼容] 最终确保高亮状态应用');
+        
+        const highlightedWords = this.storage.getHighlightedWords(this.currentArticleId);
+        let missingHighlights = 0;
+        
+        highlightedWords.forEach(item => {
+            const elements = document.querySelectorAll(`[data-word="${item.word}"]`);
+            elements.forEach(el => {
+                if (!el.classList.contains('highlighted')) {
+                    el.classList.add('highlighted');
+                    missingHighlights++;
+                }
+            });
+        });
+        
+        if (missingHighlights > 0) {
+            console.log(`[移动端兼容] 补充应用了 ${missingHighlights} 个遗漏的高亮`);
+        }
+        
+        // 同样处理收藏状态
+        const favorites = this.storage.getFavorites(this.currentArticleId);
+        let missingFavorites = 0;
+        
+        favorites.forEach(item => {
+            const sentenceElement = document.querySelector(`[data-index="${item.index}"]`);
+            if (sentenceElement && !sentenceElement.classList.contains('favorited')) {
+                sentenceElement.classList.add('favorited');
+                missingFavorites++;
+            }
+        });
+        
+        if (missingFavorites > 0) {
+            console.log(`[移动端兼容] 补充应用了 ${missingFavorites} 个遗漏的收藏状态`);
+        }
     }
 
     /**
