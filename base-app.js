@@ -303,7 +303,7 @@ class BaseApp {
      * 预加载音频 - 通用方法
      * @param {Array} sentences - 句子数组
      */
-    async preloadAudio(sentences) {
+    async preloadAudio(sentences, options = {}) {
         try {
             // 检查系统TTS支持
             if (!this.audioManager.systemTTSSupported) {
@@ -311,21 +311,28 @@ class BaseApp {
                 return;
             }
             
-            console.log('开始语音系统预检查...');
+            console.log('开始预加载音频（优化版）...');
             
-            await this.audioManager.batchPreload(sentences, (completed, total) => {
-                console.log(`语音系统预检查进度: ${completed}/${total}`);
-            });
+            // 使用优化的预加载策略
+            const preloadOptions = {
+                maxConcurrent: 3,      // 最大并发数
+                preloadCount: 5,       // 只预加载前5个句子
+                priority: [0],         // 优先加载第一个句子
+                ...options
+            };
             
-            console.log('语音系统预检查完成');
+            await this.audioManager.batchPreload(
+                sentences, 
+                (completed, total) => {
+                    console.log(`音频预加载进度: ${completed}/${total}`);
+                },
+                preloadOptions
+            );
             
-            // 显示可用语音信息
-            const voiceInfo = this.audioManager.getVoiceInfo();
-            console.log('可用语音:', voiceInfo.availableVoices.length, '个');
-            console.log('支持语言:', voiceInfo.supportedLanguages);
+            console.log('初始音频预加载完成');
             
         } catch (error) {
-            console.error('语音系统预检查失败:', error);
+            console.error('音频预加载失败:', error);
         }
     }
 

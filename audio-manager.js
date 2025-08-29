@@ -257,49 +257,76 @@ class AudioManager {
     }
 
     /**
-     * 播放文本音频
+     * 播放文本音频 - 增强错误处理
      * @param {string} text - 要播放的文本
      * @param {string} language - 语言代码
      * @param {boolean} bypassCache - 是否绕过缓存（用于测试）
      * @returns {Promise<void>}
      */
     async play(text, language = 'en', bypassCache = false) {
+        // 设置超时
+        const playTimeout = 5000; // 5秒超时
+        
         try {
             // 停止当前播放
             this.stop();
             
-            // 优先使用Google Cloud TTS，如果不可用则使用Web Speech API
-            const audio = await this.getAudio(text, language, bypassCache);
+            // 获取音频并设置超时
+            const audioPromise = this.getAudio(text, language, bypassCache);
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('音频加载超时')), playTimeout)
+            );
+            
+            const audio = await Promise.race([audioPromise, timeoutPromise]);
             
             return new Promise((resolve, reject) => {
+                let playStarted = false;
+                
+                // 设置播放超时
+                const playTimeoutId = setTimeout(() => {
+                    if (!playStarted) {
+                        console.warn('音频播放超时，跳过');
+                        this.stop();
+                        resolve();
+                    }
+                }, playTimeout);
+                
                 audio.onended = () => {
+                    clearTimeout(playTimeoutId);
                     this.isPlaying = false;
                     this.currentAudio = null;
                     resolve();
                 };
                 
                 audio.onerror = (error) => {
-                    console.error('音频播放错误:', error);
+                    clearTimeout(playTimeoutId);
+                    console.warn('音频播放出错，静默处理:', error);
                     this.isPlaying = false;
                     this.currentAudio = null;
-                    // 不抛出错误，而是静默处理
-                    resolve();
+                    resolve(); // 不阻塞用户操作
                 };
                 
                 // 设置音频属性
                 audio.playbackRate = this.voiceSettings.speed;
                 
                 audio.play().then(() => {
+                    playStarted = true;
+                    clearTimeout(playTimeoutId);
                     this.currentAudio = audio;
                     this.isPlaying = true;
                 }).catch((error) => {
-                    console.error('播放启动失败:', error);
-                    reject(error);
+                    clearTimeout(playTimeoutId);
+                    console.warn('音频播放启动失败，静默处理:', error);
+                    // 不抛出错误，直接resolve以避免阻塞
+                    resolve();
                 });
             });
         } catch (error) {
-            console.error('播放音频失败:', error);
-            throw error;
+            console.warn('音频处理失败，静默跳过:', error);
+            this.isPlaying = false;
+            this.currentAudio = null;
+            // 不抛出错误，返回空Promise
+            return Promise.resolve();
         }
     }
 
@@ -354,7 +381,7 @@ class AudioManager {
     }
 
     /**
-     * 获取或创建音频对象（用于测试，绕过缓存）
+     * 获取或创建音频对象 - 增强错误处理
      * @param {string} text - 要播放的文本
      * @param {string} language - 语言代码
      * @param {boolean} bypassCache - 是否绕过缓存（用于测试）
@@ -367,17 +394,25 @@ class AudioManager {
         if (!bypassCache) {
             // 检查内存缓存
             if (this.audioCache.has(cacheKey)) {
-                return this.audioCache.get(cacheKey);
+                const cachedAudio = this.audioCache.get(cacheKey);
+                // 验证缓存的音频是否有效
+                if (cachedAudio && !cachedAudio.error) {
+                    return cachedAudio;
+                }
             }
 
             // 检查IndexedDB缓存
-            const cachedBlob = await this.getAudioFromDB(text);
-            if (cachedBlob) {
-                const audioUrl = URL.createObjectURL(cachedBlob);
-                const audio = new Audio(audioUrl);
-                audio.playbackRate = this.voiceSettings.speed;
-                this.audioCache.set(cacheKey, audio);
-                return audio;
+            try {
+                const cachedBlob = await this.getAudioFromDB(text);
+                if (cachedBlob) {
+                    const audioUrl = URL.createObjectURL(cachedBlob);
+                    const audio = new Audio(audioUrl);
+                    audio.playbackRate = this.voiceSettings.speed;
+                    this.audioCache.set(cacheKey, audio);
+                    return audio;
+                }
+            } catch (error) {
+                console.warn('IndexedDB缓存读取失败:', error);
             }
         }
 
@@ -604,36 +639,97 @@ class AudioManager {
     }
 
     /**
-     * 批量预加载音频
+     * 批量预加载音频 - 优化版本
      * @param {Array} texts - 文本数组
      * @param {Function} progressCallback - 进度回调
+     * @param {Object} options - 配置选项
      * @returns {Promise<void>}
      */
-    async batchPreload(texts, progressCallback) {
-        const total = texts.length;
+    async batchPreload(texts, progressCallback, options = {}) {
+        const {
+            maxConcurrent = 3,  // 最大并发数
+            preloadCount = 5,   // 预加载数量（只预加载前N个）
+            priority = []       // 优先加载的索引
+        } = options;
+        
+        // 限制预加载数量，避免加载过多
+        const textsToPreload = texts.slice(0, preloadCount);
+        const total = textsToPreload.length;
         let completed = 0;
         
-        for (let i = 0; i < texts.length; i++) {
-            try {
-                const language = this.detectLanguage(texts[i]);
-                await this.getAudio(texts[i], language);
-                completed++;
-                
-                if (progressCallback) {
-                    progressCallback(completed, total);
-                }
-            } catch (error) {
-                console.warn(`预加载音频 ${i + 1} 失败:`, error);
-                completed++;
-                
-                if (progressCallback) {
-                    progressCallback(completed, total);
+        // 如果有优先级，先加载优先的
+        if (priority.length > 0) {
+            for (const index of priority) {
+                if (index < texts.length) {
+                    try {
+                        const language = this.detectLanguage(texts[index]);
+                        await this.getAudio(texts[index], language);
+                    } catch (error) {
+                        console.warn(`优先预加载音频 ${index} 失败:`, error);
+                    }
                 }
             }
-            
-            // 添加小延迟避免请求过快
-            await new Promise(resolve => setTimeout(resolve, 100));
         }
+        
+        // 批量并发加载
+        const loadBatch = async (batch) => {
+            const promises = batch.map(async (text, index) => {
+                try {
+                    const language = this.detectLanguage(text);
+                    await this.getAudio(text, language);
+                    completed++;
+                    if (progressCallback) {
+                        progressCallback(completed, total);
+                    }
+                } catch (error) {
+                    console.warn(`预加载音频失败:`, error);
+                    completed++;
+                    if (progressCallback) {
+                        progressCallback(completed, total);
+                    }
+                }
+            });
+            
+            await Promise.all(promises);
+        };
+        
+        // 分批处理
+        for (let i = 0; i < textsToPreload.length; i += maxConcurrent) {
+            const batch = textsToPreload.slice(i, i + maxConcurrent);
+            await loadBatch(batch);
+            
+            // 批次间短暂延迟
+            if (i + maxConcurrent < textsToPreload.length) {
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+        }
+    }
+    
+    /**
+     * 智能预加载 - 根据当前位置动态加载
+     * @param {Array} texts - 文本数组
+     * @param {number} currentIndex - 当前索引
+     * @param {number} range - 预加载范围
+     * @returns {Promise<void>}
+     */
+    async smartPreload(texts, currentIndex, range = 3) {
+        const startIndex = Math.max(0, currentIndex - 1);
+        const endIndex = Math.min(texts.length, currentIndex + range);
+        
+        const promises = [];
+        for (let i = startIndex; i < endIndex; i++) {
+            if (i >= 0 && i < texts.length) {
+                const language = this.detectLanguage(texts[i]);
+                promises.push(
+                    this.getAudio(texts[i], language).catch(err => {
+                        console.warn(`预加载句子 ${i} 失败:`, err);
+                    })
+                );
+            }
+        }
+        
+        // 并发加载，不等待
+        Promise.all(promises).catch(() => {});
     }
 
     /**

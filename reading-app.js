@@ -690,6 +690,9 @@ class ReadingApp extends BaseApp {
                 return;
             }
             
+            // 智能预加载下一批句子
+            this.smartPreloadNext();
+            
             await this.audioManager.play(sentence, language);
             
             this.isPlaying = false;
@@ -753,6 +756,10 @@ class ReadingApp extends BaseApp {
             // 停止当前播放
             this.stopPlaying();
             this.currentSentenceIndex--;
+            
+            // 预加载附近句子
+            this.smartPreloadNext();
+            
             await this.playCurrentSentence(); // 使用懒滚动
         }
     }
@@ -762,7 +769,15 @@ class ReadingApp extends BaseApp {
             // 停止当前播放
             this.stopPlaying();
             this.currentSentenceIndex++;
+            
+            // 预加载附近句子
+            this.smartPreloadNext();
+            
             await this.playCurrentSentence(); // 使用懒滚动
+        } else {
+            // 已到最后一句
+            this.stopPlaying();
+            Utils.showToast('已到文章末尾', 'info');
         }
     }
 
@@ -870,12 +885,45 @@ class ReadingApp extends BaseApp {
     }
 
     /**
-     * 预加载音频
+     * 预加载音频 - 智能优化版
      */
     async preloadAudio() {
-        await super.preloadAudio(this.sentences);
+        // 只预加载前几个句子，避免大量请求
+        const options = {
+            maxConcurrent: 3,
+            preloadCount: Math.min(5, this.sentences.length),
+            priority: [this.currentSentenceIndex] // 优先加载当前句子
+        };
+        
+        // 非阻塞式预加载
+        super.preloadAudio(this.sentences, options).catch(err => {
+            console.warn('预加载失败（不影响播放）:', err);
+        });
+        
+        // 立即预加载当前句子的音频（确保首句能快速播放）
+        if (this.sentences.length > 0 && this.currentSentenceIndex < this.sentences.length) {
+            const currentSentence = this.sentences[this.currentSentenceIndex];
+            const language = this.audioManager.detectLanguage(currentSentence);
+            this.audioManager.getAudio(currentSentence, language).catch(err => {
+                console.warn('预加载当前句子失败:', err);
+            });
+        }
     }
 
+    /**
+     * 智能预加载下一批句子
+     */
+    smartPreloadNext() {
+        // 使用智能预加载，只加载附近的句子
+        if (this.audioManager.smartPreload) {
+            this.audioManager.smartPreload(
+                this.sentences, 
+                this.currentSentenceIndex,
+                3 // 预加载前后3个句子
+            );
+        }
+    }
+    
     /**
      * 应用字体设置
      */
