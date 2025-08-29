@@ -1673,3 +1673,131 @@ nav {
     color: #27ae60;
     font-weight: 500;
 }
+
+/* Supabase 同步样式 */
+.sync-config {
+    margin: 15px 0;
+}
+
+.sync-config input[type="text"],
+.sync-config input[type="email"] {
+    width: 100%;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.sync-status {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+}
+
+.sync-status h4 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 16px;
+}
+
+#syncStatusInfo {
+    margin: 10px 0;
+}
+
+#syncStatusInfo p {
+    margin: 5px 0;
+    color: #666;
+    font-size: 14px;
+}
+
+#syncStatusInfo span {
+    font-weight: 500;
+    color: #333;
+}
+
+.sync-controls {
+    margin-top: 15px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.sync-controls .checkbox-label {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: #666;
+}
+
+.sync-controls .checkbox-label input {
+    margin-right: 6px;
+}
+
+.sync-message {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 4px;
+    display: none;
+    font-size: 14px;
+}
+
+.sync-message.show {
+    display: block;
+}
+
+.sync-message.info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.sync-message.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.sync-message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.sync-message.warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+/* 同步状态指示器 */
+#syncState {
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+#syncState.initialized {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+#syncState.syncing {
+    background-color: #fff3cd;
+    color: #856404;
+    animation: pulse 1.5s infinite;
+}
+
+#syncState.error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+}

@@ -160,6 +160,48 @@
                 </div>
 
                 <div class="setting-group">
+                    <h3>多端同步设置</h3>
+                    <p class="section-description">通过 Supabase 实现多设备数据同步</p>
+                    
+                    <div class="sync-config">
+                        <label for="supabaseUrl">Supabase 项目 URL：</label>
+                        <input type="text" id="supabaseUrl" placeholder="https://xxxxx.supabase.co">
+                        
+                        <label for="supabaseKey">Supabase Anon Key：</label>
+                        <textarea id="supabaseKey" placeholder="输入你的 Supabase Anon Key" rows="3"></textarea>
+                        
+                        <label for="syncSecret">同步密钥（多设备共享）：</label>
+                        <input type="text" id="syncSecret" placeholder="输入一个密钥，所有设备使用相同密钥即可同步">
+                        <small style="color: #666;">提示：在所有设备上输入相同的密钥即可实现多设备同步</small>
+                        
+                        <div class="button-container">
+                            <button id="initSyncBtn" class="btn primary">初始化同步</button>
+                            <button id="testSyncBtn" class="btn secondary" disabled>测试连接</button>
+                        </div>
+                    </div>
+                    
+                    <div class="sync-status">
+                        <h4>同步状态</h4>
+                        <div id="syncStatusInfo">
+                            <p>状态：<span id="syncState">未初始化</span></p>
+                            <p>最后同步：<span id="lastSyncTime">从未</span></p>
+                            <p>离线队列：<span id="offlineQueueCount">0</span> 项</p>
+                        </div>
+                        
+                        <div class="sync-controls">
+                            <button id="manualSyncBtn" class="btn primary" disabled>立即同步</button>
+                            <button id="syncFromCloudBtn" class="btn secondary" disabled>从云端恢复</button>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="autoSyncToggle" checked>
+                                启用自动同步（每30秒）
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div id="syncMessage" class="sync-message"></div>
+                </div>
+
+                <div class="setting-group">
                     <h3>数据导出/导入</h3>
                     <p class="section-description">导出或导入文章数据，包括标注的重点词句和对应解释</p>
                     
@@ -209,6 +251,7 @@
     <script src="time-tracker.js"></script>
     <script src="floating-timer.js"></script>
     <script src="global-time-manager.js"></script>
+    <script src="supabase-sync.js"></script>
     <script src="base-app.js"></script>
     <script src="main-app.js"></script>
 </body>

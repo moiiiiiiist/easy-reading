@@ -11,6 +11,9 @@ class MainApp extends BaseApp {
         // 初始化时间统计
         this.initTimeTracking();
         
+        // 初始化同步管理器
+        this.initSupabaseSync();
+        
         // 初始化应用
         this.init();
     }
@@ -76,7 +79,21 @@ class MainApp extends BaseApp {
             overwriteExisting: document.getElementById('overwriteExisting'),
             generateNewId: document.getElementById('generateNewId'),
             importDataBtn: document.getElementById('importDataBtn'),
-            importStatus: document.getElementById('importStatus')
+            importStatus: document.getElementById('importStatus'),
+            
+            // Supabase 同步
+            supabaseUrl: document.getElementById('supabaseUrl'),
+            supabaseKey: document.getElementById('supabaseKey'),
+            syncSecret: document.getElementById('syncSecret'),
+            initSyncBtn: document.getElementById('initSyncBtn'),
+            testSyncBtn: document.getElementById('testSyncBtn'),
+            syncState: document.getElementById('syncState'),
+            lastSyncTime: document.getElementById('lastSyncTime'),
+            offlineQueueCount: document.getElementById('offlineQueueCount'),
+            manualSyncBtn: document.getElementById('manualSyncBtn'),
+            syncFromCloudBtn: document.getElementById('syncFromCloudBtn'),
+            autoSyncToggle: document.getElementById('autoSyncToggle'),
+            syncMessage: document.getElementById('syncMessage')
         };
     }
 
@@ -136,6 +153,13 @@ class MainApp extends BaseApp {
         this.elements.importDataBtn.addEventListener('click', () => this.importData());
         this.elements.overwriteExisting.addEventListener('change', () => this.updateImportOptions());
         this.elements.generateNewId.addEventListener('change', () => this.updateImportOptions());
+        
+        // Supabase 同步事件
+        this.elements.initSyncBtn.addEventListener('click', () => this.initializeSync());
+        this.elements.testSyncBtn.addEventListener('click', () => this.testSyncConnection());
+        this.elements.manualSyncBtn.addEventListener('click', () => this.manualSync());
+        this.elements.syncFromCloudBtn.addEventListener('click', () => this.syncFromCloud());
+        this.elements.autoSyncToggle.addEventListener('change', (e) => this.toggleAutoSync(e.target.checked));
     }
 
     /**
@@ -815,6 +839,304 @@ class MainApp extends BaseApp {
         } else {
             this.elements.generateNewId.disabled = false;
         }
+    }
+    
+    /**
+     * 初始化 Supabase 同步
+     */
+    initSupabaseSync() {
+        this.supabaseSync = new SupabaseSync();
+        
+        // 设置同步事件回调（使用箭头函数保持this上下文）
+        this.supabaseSync.onSyncStart = () => {
+            this.updateSyncUI('syncing');
+        };
+        
+        this.supabaseSync.onSyncComplete = (data) => {
+            this.updateSyncUI('completed');
+            this.showSyncMessage('同步成功', 'success');
+            this.updateSyncStatus();
+            // 刷新文章列表
+            if (this.loadArticles) {
+                this.loadArticles();
+            }
+        };
+        
+        this.supabaseSync.onSyncError = (error) => {
+            this.updateSyncUI('error');
+            this.showSyncMessage('同步失败：' + error.message, 'error');
+        };
+        
+        this.supabaseSync.onConflict = async (localData, cloudData, conflicts) => {
+            // 显示冲突解决对话框（暂时使用自动合并）
+            console.log('检测到数据冲突:', conflicts);
+            return this.supabaseSync.mergeData(localData, cloudData);
+        };
+        
+        // 加载保存的配置
+        this.loadSyncConfig();
+        
+        // 定期更新同步状态显示
+        setInterval(() => {
+            this.updateSyncStatus();
+        }, 5000);
+    }
+    
+    /**
+     * 加载同步配置
+     */
+    loadSyncConfig() {
+        const config = localStorage.getItem('supabaseConfig');
+        if (config) {
+            const { url, key, secret } = JSON.parse(config);
+            this.elements.supabaseUrl.value = url || '';
+            this.elements.supabaseKey.value = key || '';
+            this.elements.syncSecret.value = secret || '';
+            
+            // 如果有配置，尝试自动初始化
+            if (url && key && secret) {
+                this.initializeSync(true);
+            }
+        }
+    }
+    
+    /**
+     * 保存同步配置
+     */
+    saveSyncConfig() {
+        const config = {
+            url: this.elements.supabaseUrl.value,
+            key: this.elements.supabaseKey.value,
+            secret: this.elements.syncSecret.value
+        };
+        localStorage.setItem('supabaseConfig', JSON.stringify(config));
+    }
+    
+    /**
+     * 初始化同步连接
+     */
+    async initializeSync(silent = false) {
+        const url = this.elements.supabaseUrl.value.trim();
+        const key = this.elements.supabaseKey.value.trim();
+        const secret = this.elements.syncSecret.value.trim();
+        
+        if (!url || !key || !secret) {
+            if (!silent) {
+                this.showSyncMessage('请填写 Supabase URL、Key 和同步密钥', 'error');
+            }
+            return;
+        }
+        
+        try {
+            Utils.setLoading(this.elements.initSyncBtn, true);
+            
+            await this.supabaseSync.initialize(url, key, secret);
+            
+            // 保存配置
+            this.saveSyncConfig();
+            
+            // 更新UI
+            this.elements.testSyncBtn.disabled = false;
+            this.elements.manualSyncBtn.disabled = false;
+            this.elements.syncFromCloudBtn.disabled = false;
+            
+            this.updateSyncUI('initialized');
+            
+            if (!silent) {
+                this.showSyncMessage('同步初始化成功！', 'success');
+            }
+            
+            // 自动执行首次同步
+            if (this.elements.autoSyncToggle.checked) {
+                setTimeout(() => {
+                    this.manualSync();
+                }, 2000);
+            }
+            
+        } catch (error) {
+            console.error('初始化同步失败:', error);
+            if (!silent) {
+                this.showSyncMessage('初始化失败：' + error.message, 'error');
+            }
+        } finally {
+            Utils.setLoading(this.elements.initSyncBtn, false);
+        }
+    }
+    
+    /**
+     * 测试同步连接
+     */
+    async testSyncConnection() {
+        try {
+            Utils.setLoading(this.elements.testSyncBtn, true);
+            
+            const status = this.supabaseSync.getSyncStatus();
+            
+            if (!status.isInitialized) {
+                this.showSyncMessage('请先初始化同步', 'warning');
+                return;
+            }
+            
+            // 尝试获取云端数据
+            const cloudData = await this.supabaseSync.fetchCloudData();
+            
+            if (cloudData) {
+                this.showSyncMessage('连接成功！云端有数据', 'success');
+            } else {
+                this.showSyncMessage('连接成功！云端暂无数据', 'info');
+            }
+            
+        } catch (error) {
+            console.error('测试连接失败:', error);
+            this.showSyncMessage('连接失败：' + error.message, 'error');
+        } finally {
+            Utils.setLoading(this.elements.testSyncBtn, false);
+        }
+    }
+    
+    /**
+     * 手动同步
+     */
+    async manualSync() {
+        try {
+            Utils.setLoading(this.elements.manualSyncBtn, true);
+            
+            await this.supabaseSync.syncToCloud();
+            
+            this.showSyncMessage('同步成功！', 'success');
+            this.updateSyncStatus();
+            
+        } catch (error) {
+            console.error('手动同步失败:', error);
+            this.showSyncMessage('同步失败：' + error.message, 'error');
+        } finally {
+            Utils.setLoading(this.elements.manualSyncBtn, false);
+        }
+    }
+    
+    /**
+     * 从云端同步
+     */
+    async syncFromCloud() {
+        const confirm = window.confirm('从云端恢复将覆盖本地数据，确定继续？');
+        if (!confirm) return;
+        
+        try {
+            Utils.setLoading(this.elements.syncFromCloudBtn, true);
+            
+            await this.supabaseSync.syncFromCloud();
+            
+            this.showSyncMessage('从云端恢复成功！', 'success');
+            
+            // 刷新页面以显示新数据
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+            
+        } catch (error) {
+            console.error('从云端同步失败:', error);
+            this.showSyncMessage('恢复失败：' + error.message, 'error');
+        } finally {
+            Utils.setLoading(this.elements.syncFromCloudBtn, false);
+        }
+    }
+    
+    /**
+     * 切换自动同步
+     */
+    toggleAutoSync(enabled) {
+        if (!this.supabaseSync) return;
+        
+        if (enabled) {
+            this.supabaseSync.startAutoSync();
+            this.showSyncMessage('自动同步已启用', 'info');
+        } else {
+            this.supabaseSync.stopAutoSync();
+            this.showSyncMessage('自动同步已停用', 'info');
+        }
+        
+        // 保存设置
+        localStorage.setItem('autoSyncEnabled', enabled);
+    }
+    
+    /**
+     * 更新同步UI状态
+     */
+    updateSyncUI(state) {
+        const syncState = this.elements.syncState;
+        
+        // 移除所有状态类
+        syncState.classList.remove('initialized', 'syncing', 'error');
+        
+        switch (state) {
+            case 'initialized':
+                syncState.textContent = '已连接';
+                syncState.classList.add('initialized');
+                break;
+            case 'syncing':
+                syncState.textContent = '同步中...';
+                syncState.classList.add('syncing');
+                break;
+            case 'completed':
+                syncState.textContent = '已同步';
+                syncState.classList.add('initialized');
+                break;
+            case 'error':
+                syncState.textContent = '同步错误';
+                syncState.classList.add('error');
+                break;
+            default:
+                syncState.textContent = '未初始化';
+        }
+    }
+    
+    /**
+     * 更新同步状态显示
+     */
+    updateSyncStatus() {
+        if (!this.supabaseSync) return;
+        
+        const status = this.supabaseSync.getSyncStatus();
+        
+        // 更新最后同步时间
+        if (status.lastSyncTime) {
+            const date = new Date(status.lastSyncTime);
+            this.elements.lastSyncTime.textContent = date.toLocaleString('zh-CN');
+        } else {
+            this.elements.lastSyncTime.textContent = '从未';
+        }
+        
+        // 更新离线队列数量
+        this.elements.offlineQueueCount.textContent = status.offlineQueueSize;
+        
+        // 更新连接状态
+        if (!status.isInitialized) {
+            this.updateSyncUI('default');
+        } else if (status.isSyncing) {
+            this.updateSyncUI('syncing');
+        } else if (status.isOnline) {
+            this.updateSyncUI('initialized');
+        }
+    }
+    
+    /**
+     * 显示同步消息
+     */
+    showSyncMessage(message, type = 'info') {
+        const messageEl = this.elements.syncMessage;
+        
+        // 移除所有类型类
+        messageEl.classList.remove('info', 'success', 'error', 'warning');
+        
+        // 添加新类型类
+        messageEl.classList.add(type);
+        messageEl.textContent = message;
+        messageEl.classList.add('show');
+        
+        // 3秒后自动隐藏
+        setTimeout(() => {
+            messageEl.classList.remove('show');
+        }, 3000);
     }
 }
 
